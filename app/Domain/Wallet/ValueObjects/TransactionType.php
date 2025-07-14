@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\ValueObjects;
 
 enum TransactionType: string
@@ -19,6 +21,21 @@ enum TransactionType: string
     case WITHDRAWAL = 'withdrawal';
     case ADJUSTMENT = 'adjustment';
     case FEE = 'fee';
+
+    public static function getCreditTypes(): array
+    {
+        return array_filter(self::cases(), fn ($type): bool => $type->isCredit());
+    }
+
+    public static function getDebitTypes(): array
+    {
+        return array_filter(self::cases(), fn ($type): bool => $type->isDebit());
+    }
+
+    public static function getByCategory(string $category): array
+    {
+        return array_filter(self::cases(), fn ($type): bool => $type->getCategory() === $category);
+    }
 
     public function getLabel(): string
     {
@@ -122,21 +139,6 @@ enum TransactionType: string
             self::DEPOSIT, self::WITHDRAWAL => 'external',
             self::ADJUSTMENT, self::FEE => 'administrative',
         };
-    }
-
-    public static function getCreditTypes(): array
-    {
-        return array_filter(self::cases(), fn ($type) => $type->isCredit());
-    }
-
-    public static function getDebitTypes(): array
-    {
-        return array_filter(self::cases(), fn ($type) => $type->isDebit());
-    }
-
-    public static function getByCategory(string $category): array
-    {
-        return array_filter(self::cases(), fn ($type) => $type->getCategory() === $category);
     }
 
     public function toArray(): array

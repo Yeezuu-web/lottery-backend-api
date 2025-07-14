@@ -1,73 +1,51 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Agent\Models;
 
 use App\Shared\Exceptions\ValidationException;
-use DateTime;
+use DateTimeImmutable;
 
-final class AgentProfile
+final readonly class AgentProfile
 {
-    private readonly int $id;
+    private string $country;
 
-    private readonly int $agentId;
+    private ?DateTimeImmutable $dateOfBirth;
 
-    private readonly ?string $fullName;
+    private ?string $gender;
 
-    private readonly ?string $address;
+    private string $preferredLanguage;
 
-    private readonly ?string $city;
+    private string $timezone;
 
-    private readonly string $country;
+    private ?string $lastLoginIp;
 
-    private readonly ?DateTime $dateOfBirth;
+    private DateTimeImmutable $createdAt;
 
-    private readonly ?string $gender;
-
-    private readonly ?string $businessName;
-
-    private readonly ?string $businessRegistration;
-
-    private readonly ?string $businessAddress;
-
-    private readonly string $preferredLanguage;
-
-    private readonly string $timezone;
-
-    private readonly ?array $notificationPreferences;
-
-    private readonly ?DateTime $lastLoginAt;
-
-    private readonly ?string $lastLoginIp;
-
-    private readonly ?array $loginHistory;
-
-    private readonly ?array $metadata;
-
-    private readonly DateTime $createdAt;
-
-    private readonly DateTime $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
     public function __construct(
-        int $id,
-        int $agentId,
-        ?string $fullName = null,
-        ?string $address = null,
-        ?string $city = null,
+        private int $id,
+        private int $agentId,
+        private ?string $fullName = null,
+        private ?string $address = null,
+        private ?string $city = null,
         string $country = 'Cambodia',
-        ?DateTime $dateOfBirth = null,
+        ?DateTimeImmutable $dateOfBirth = null,
         ?string $gender = null,
-        ?string $businessName = null,
-        ?string $businessRegistration = null,
-        ?string $businessAddress = null,
+        private ?string $businessName = null,
+        private ?string $businessRegistration = null,
+        private ?string $businessAddress = null,
         string $preferredLanguage = 'km',
         string $timezone = 'Asia/Phnom_Penh',
-        ?array $notificationPreferences = null,
-        ?DateTime $lastLoginAt = null,
+        private ?array $notificationPreferences = null,
+        private ?DateTimeImmutable $lastLoginAt = null,
         ?string $lastLoginIp = null,
-        ?array $loginHistory = null,
-        ?array $metadata = null,
-        ?DateTime $createdAt = null,
-        ?DateTime $updatedAt = null
+        private ?array $loginHistory = null,
+        private ?array $metadata = null,
+        ?DateTimeImmutable $createdAt = null,
+        ?DateTimeImmutable $updatedAt = null
     ) {
         $this->validateGender($gender);
         $this->validateCountry($country);
@@ -75,27 +53,14 @@ final class AgentProfile
         $this->validateTimezone($timezone);
         $this->validateDateOfBirth($dateOfBirth);
         $this->validateLoginIp($lastLoginIp);
-
-        $this->id = $id;
-        $this->agentId = $agentId;
-        $this->fullName = $fullName;
-        $this->address = $address;
-        $this->city = $city;
         $this->country = $country;
         $this->dateOfBirth = $dateOfBirth;
         $this->gender = $gender;
-        $this->businessName = $businessName;
-        $this->businessRegistration = $businessRegistration;
-        $this->businessAddress = $businessAddress;
         $this->preferredLanguage = $preferredLanguage;
         $this->timezone = $timezone;
-        $this->notificationPreferences = $notificationPreferences;
-        $this->lastLoginAt = $lastLoginAt;
         $this->lastLoginIp = $lastLoginIp;
-        $this->loginHistory = $loginHistory;
-        $this->metadata = $metadata;
-        $this->createdAt = $createdAt ?? new DateTime;
-        $this->updatedAt = $updatedAt ?? new DateTime;
+        $this->createdAt = $createdAt ?? new DateTimeImmutable;
+        $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
     }
 
     public function id(): int
@@ -128,7 +93,7 @@ final class AgentProfile
         return $this->country;
     }
 
-    public function dateOfBirth(): ?DateTime
+    public function dateOfBirth(): ?DateTimeImmutable
     {
         return $this->dateOfBirth;
     }
@@ -168,7 +133,7 @@ final class AgentProfile
         return $this->notificationPreferences;
     }
 
-    public function lastLoginAt(): ?DateTime
+    public function lastLoginAt(): ?DateTimeImmutable
     {
         return $this->lastLoginAt;
     }
@@ -188,12 +153,12 @@ final class AgentProfile
         return $this->metadata;
     }
 
-    public function createdAt(): DateTime
+    public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): DateTime
+    public function updatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
@@ -203,7 +168,7 @@ final class AgentProfile
         return $this->fullName !== null
             && $this->address !== null
             && $this->city !== null
-            && $this->dateOfBirth !== null;
+            && $this->dateOfBirth instanceof DateTimeImmutable;
     }
 
     public function hasBusiness(): bool
@@ -213,11 +178,11 @@ final class AgentProfile
 
     public function getAge(): ?int
     {
-        if ($this->dateOfBirth === null) {
+        if (! $this->dateOfBirth instanceof DateTimeImmutable) {
             return null;
         }
 
-        $now = new DateTime;
+        $now = new DateTimeImmutable;
         $age = $now->diff($this->dateOfBirth);
 
         return $age->y;
@@ -232,11 +197,11 @@ final class AgentProfile
 
     public function hasRecentLogin(): bool
     {
-        if ($this->lastLoginAt === null) {
+        if (! $this->lastLoginAt instanceof DateTimeImmutable) {
             return false;
         }
 
-        $threshold = new DateTime('-30 days');
+        $threshold = new DateTimeImmutable('-30 days');
 
         return $this->lastLoginAt > $threshold;
     }
@@ -266,7 +231,7 @@ final class AgentProfile
         // Update login history
         $newHistory = $this->loginHistory ?? [];
         $newHistory[] = [
-            'timestamp' => new DateTime,
+            'timestamp' => new DateTimeImmutable,
             'ip' => $ipAddress,
         ];
 
@@ -290,12 +255,12 @@ final class AgentProfile
             $this->preferredLanguage,
             $this->timezone,
             $this->notificationPreferences,
-            new DateTime,
+            new DateTimeImmutable,
             $ipAddress,
             $newHistory,
             $this->metadata,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -304,16 +269,18 @@ final class AgentProfile
         ?string $address = null,
         ?string $city = null,
         ?string $country = null,
-        ?DateTime $dateOfBirth = null,
+        ?DateTimeImmutable $dateOfBirth = null,
         ?string $gender = null
     ): self {
         if ($country !== null) {
             $this->validateCountry($country);
         }
+
         if ($gender !== null) {
             $this->validateGender($gender);
         }
-        if ($dateOfBirth !== null) {
+
+        if ($dateOfBirth instanceof DateTimeImmutable) {
             $this->validateDateOfBirth($dateOfBirth);
         }
 
@@ -337,7 +304,7 @@ final class AgentProfile
             $this->loginHistory,
             $this->metadata,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -366,7 +333,7 @@ final class AgentProfile
             $this->loginHistory,
             $this->metadata,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -378,6 +345,7 @@ final class AgentProfile
         if ($preferredLanguage !== null) {
             $this->validateLanguage($preferredLanguage);
         }
+
         if ($timezone !== null) {
             $this->validateTimezone($timezone);
         }
@@ -402,7 +370,7 @@ final class AgentProfile
             $this->loginHistory,
             $this->metadata,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -415,7 +383,7 @@ final class AgentProfile
 
     private function validateCountry(string $country): void
     {
-        if (empty($country)) {
+        if ($country === '' || $country === '0') {
             throw new ValidationException('Country cannot be empty');
         }
     }
@@ -436,13 +404,13 @@ final class AgentProfile
         }
     }
 
-    private function validateDateOfBirth(?DateTime $dateOfBirth): void
+    private function validateDateOfBirth(?DateTimeImmutable $dateOfBirth): void
     {
-        if ($dateOfBirth === null) {
+        if (! $dateOfBirth instanceof DateTimeImmutable) {
             return;
         }
 
-        $now = new DateTime;
+        $now = new DateTimeImmutable;
         if ($dateOfBirth > $now) {
             throw new ValidationException('Date of birth cannot be in the future');
         }

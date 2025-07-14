@@ -1,30 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\Events;
 
 use App\Domain\Order\Models\Order;
-use DateTime;
+use DateTimeImmutable;
 
 final readonly class OrderAccepted
 {
     public function __construct(
         private Order $order,
-        private DateTime $occurredAt
+        private DateTimeImmutable $occurredAt
     ) {}
+
+    public static function now(Order $order): self
+    {
+        return new self($order, new DateTimeImmutable);
+    }
 
     public function order(): Order
     {
         return $this->order;
     }
 
-    public function occurredAt(): DateTime
+    public function occurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
-    }
-
-    public static function now(Order $order): self
-    {
-        return new self($order, new DateTime);
     }
 
     public function toArray(): array

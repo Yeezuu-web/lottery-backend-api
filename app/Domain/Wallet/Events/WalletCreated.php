@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Events;
 
 use App\Domain\Wallet\Models\Wallet;
 use Carbon\Carbon;
 
-final class WalletCreated
+final readonly class WalletCreated
 {
     public function __construct(
-        public readonly int $walletId,
-        public readonly int $ownerId,
-        public readonly string $walletType,
-        public readonly string $currency,
-        public readonly Carbon $occurredAt
+        public int $walletId,
+        public int $ownerId,
+        public string $walletType,
+        public string $currency,
+        public Carbon $occurredAt
     ) {}
 
     public static function create(Wallet $wallet): self

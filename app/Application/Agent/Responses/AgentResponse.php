@@ -1,26 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Agent\Responses;
 
 use App\Domain\Agent\Models\Agent;
 
-final class AgentResponse
+final readonly class AgentResponse
 {
     public function __construct(
-        private readonly int $id,
-        private readonly string $username,
-        private readonly string $name,
-        private readonly string $email,
-        private readonly string $agentType,
-        private readonly string $agentTypeDisplay,
-        private readonly ?int $uplineId,
-        private readonly bool $isActive,
-        private readonly int $hierarchyLevel,
-        private readonly string $createdAt,
-        private readonly ?string $updatedAt,
-        private readonly array $permissions = [],
-        private readonly array $statistics = []
+        private int $id,
+        private string $username,
+        private string $name,
+        private string $email,
+        private string $agentType,
+        private string $agentTypeDisplay,
+        private ?int $uplineId,
+        private bool $isActive,
+        private int $hierarchyLevel,
+        private string $createdAt,
+        private ?string $updatedAt,
+        private array $permissions = [],
+        private array $statistics = []
     ) {}
+
+    public static function fromDomain(Agent $agent, array $permissions = [], array $statistics = []): self
+    {
+        return new self(
+            $agent->id(),
+            $agent->username()->value(),
+            $agent->name(),
+            $agent->email(),
+            $agent->agentType()->value(),
+            $agent->agentType()->getDisplayName(),
+            $agent->uplineId(),
+            $agent->isActive(),
+            $agent->getHierarchyLevel(),
+            $agent->createdAt()->format('Y-m-d H:i:s'),
+            $agent->updatedAt()?->format('Y-m-d H:i:s'),
+            $permissions,
+            $statistics
+        );
+    }
 
     public function getId(): int
     {
@@ -104,24 +125,5 @@ final class AgentResponse
             'permissions' => $this->permissions,
             'statistics' => $this->statistics,
         ];
-    }
-
-    public static function fromDomain(Agent $agent, array $permissions = [], array $statistics = []): self
-    {
-        return new self(
-            $agent->id(),
-            $agent->username()->value(),
-            $agent->name(),
-            $agent->email(),
-            $agent->agentType()->value(),
-            $agent->agentType()->getDisplayName(),
-            $agent->uplineId(),
-            $agent->isActive(),
-            $agent->getHierarchyLevel(),
-            $agent->createdAt()->format('Y-m-d H:i:s'),
-            $agent->updatedAt()?->format('Y-m-d H:i:s'),
-            $permissions,
-            $statistics
-        );
     }
 }

@@ -1,63 +1,51 @@
 <?php
 
-namespace Tests\Unit\Application\Auth\DTOs;
-
+declare(strict_types=1);
 use App\Application\Auth\DTOs\AuthenticateUserCommand;
-use PHPUnit\Framework\TestCase;
 
-class AuthenticateUserCommandTest extends TestCase
-{
-    public function test_can_create_authenticate_user_command()
-    {
-        $username = 'testuser';
-        $password = 'password123';
-        $audience = 'upline';
+test('can create authenticate user command', function (): void {
+    $username = 'testuser';
+    $password = 'password123';
+    $audience = 'upline';
 
-        $command = new AuthenticateUserCommand($username, $password, $audience);
+    $command = new AuthenticateUserCommand($username, $password, $audience);
 
-        $this->assertEquals($username, $command->username);
-        $this->assertEquals($password, $command->password);
-        $this->assertEquals($audience, $command->audience);
-    }
+    expect($command->username)->toEqual($username);
+    expect($command->password)->toEqual($password);
+    expect($command->audience)->toEqual($audience);
+});
+test('trims username whitespace', function (): void {
+    $username = '  testuser  ';
+    $password = 'password123';
+    $audience = 'upline';
 
-    public function test_trims_username_whitespace()
-    {
-        $username = '  testuser  ';
-        $password = 'password123';
-        $audience = 'upline';
+    $command = new AuthenticateUserCommand($username, $password, $audience);
 
-        $command = new AuthenticateUserCommand($username, $password, $audience);
+    expect($command->username)->toEqual('testuser');
+    expect($command->password)->toEqual($password);
+    expect($command->audience)->toEqual($audience);
+});
+test('to array returns correct structure', function (): void {
+    $username = 'testuser';
+    $password = 'password123';
+    $audience = 'upline';
 
-        $this->assertEquals('testuser', $command->username);
-        $this->assertEquals($password, $command->password);
-        $this->assertEquals($audience, $command->audience);
-    }
+    $command = new AuthenticateUserCommand($username, $password, $audience);
+    $array = $command->toArray();
 
-    public function test_to_array_returns_correct_structure()
-    {
-        $username = 'testuser';
-        $password = 'password123';
-        $audience = 'upline';
+    expect($array)->toEqual([
+        'username' => $username,
+        'audience' => $audience,
+    ]);
 
-        $command = new AuthenticateUserCommand($username, $password, $audience);
-        $array = $command->toArray();
+    // Password should not be included in toArray for security
+    $this->assertArrayNotHasKey('password', $array);
+});
+test('properties are readonly', function (): void {
+    $command = new AuthenticateUserCommand('testuser', 'password123', 'upline');
 
-        $this->assertEquals([
-            'username' => $username,
-            'audience' => $audience,
-        ], $array);
-
-        // Password should not be included in toArray for security
-        $this->assertArrayNotHasKey('password', $array);
-    }
-
-    public function test_properties_are_readonly()
-    {
-        $command = new AuthenticateUserCommand('testuser', 'password123', 'upline');
-
-        // These should be readonly properties
-        $this->assertTrue(property_exists($command, 'username'));
-        $this->assertTrue(property_exists($command, 'password'));
-        $this->assertTrue(property_exists($command, 'audience'));
-    }
-}
+    // These should be readonly properties
+    expect(property_exists($command, 'username'))->toBeTrue();
+    expect(property_exists($command, 'password'))->toBeTrue();
+    expect(property_exists($command, 'audience'))->toBeTrue();
+});

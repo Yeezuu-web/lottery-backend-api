@@ -1,21 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Agent\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
 use App\Infrastructure\Order\Models\EloquentCart;
 use App\Infrastructure\Order\Models\EloquentOrder;
 use App\Infrastructure\Wallet\Models\EloquentWallet;
-use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class EloquentAgent extends Authenticatable
+final class EloquentAgent extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory;
+    use Notifiable;
 
     protected $table = 'agents';
 
@@ -41,17 +44,6 @@ class EloquentAgent extends Authenticatable
         'password',
         'remember_token',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
 
     /**
      * Agent type enum values
@@ -81,7 +73,7 @@ class EloquentAgent extends Authenticatable
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(EloquentAgent::class, 'upline_id');
+        return $this->belongsTo(self::class, 'upline_id');
     }
 
     /**
@@ -89,7 +81,7 @@ class EloquentAgent extends Authenticatable
      */
     public function children(): HasMany
     {
-        return $this->hasMany(EloquentAgent::class, 'upline_id');
+        return $this->hasMany(self::class, 'upline_id');
     }
 
     /**
@@ -97,7 +89,7 @@ class EloquentAgent extends Authenticatable
      */
     public function descendants(): HasMany
     {
-        return $this->hasMany(EloquentAgent::class, 'upline_id')
+        return $this->hasMany(self::class, 'upline_id')
             ->with('descendants');
     }
 
@@ -106,7 +98,7 @@ class EloquentAgent extends Authenticatable
      */
     public function directDownlines(): HasMany
     {
-        return $this->hasMany(EloquentAgent::class, 'upline_id');
+        return $this->hasMany(self::class, 'upline_id');
     }
 
     /**
@@ -253,7 +245,7 @@ class EloquentAgent extends Authenticatable
      */
     public function getDisplayNameAttribute(): string
     {
-        return "{$this->name} ({$this->username})";
+        return sprintf('%s (%s)', $this->name, $this->username);
     }
 
     /**
@@ -291,7 +283,7 @@ class EloquentAgent extends Authenticatable
     /**
      * Check if agent can manage another agent
      */
-    public function canManage(EloquentAgent $agent): bool
+    public function canManage(self $agent): bool
     {
         // Company can manage everyone
         if ($this->isCompany()) {
@@ -332,5 +324,16 @@ class EloquentAgent extends Authenticatable
     public function getBonusWalletBalanceAttribute(): float
     {
         return $this->bonusWallet?->balance ?? 0;
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 }

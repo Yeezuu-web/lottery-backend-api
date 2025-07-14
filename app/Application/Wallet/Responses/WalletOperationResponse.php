@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\Responses;
 
-final class WalletOperationResponse
+final readonly class WalletOperationResponse
 {
     public function __construct(
-        public readonly bool $success,
-        public readonly string $message,
-        public readonly mixed $data = null,
-        public readonly ?array $errors = null
+        public bool $success,
+        public string $message,
+        public mixed $data = null,
+        public ?array $errors = null
     ) {}
 
     public static function success(string $message, mixed $data = null): self

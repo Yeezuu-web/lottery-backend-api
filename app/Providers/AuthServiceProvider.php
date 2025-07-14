@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Application\Auth\UseCases\AuthenticateUserUseCase;
@@ -15,7 +17,7 @@ use App\Infrastructure\Auth\Services\JWTTokenService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
-class AuthServiceProvider extends ServiceProvider
+final class AuthServiceProvider extends ServiceProvider
 {
     /**
      * Register any authentication / authorization services.
@@ -23,24 +25,22 @@ class AuthServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Register JWT configuration
-        $this->app->singleton('jwt.config', function ($app) {
-            return [
-                'upline' => [
-                    'secret' => env('JWT_UPLINE_SECRET', 'your-upline-secret-key'),
-                    'issuer' => env('JWT_ISSUER', 'lottery-api'),
-                    'audience' => 'upline',
-                    'access_token_ttl' => env('JWT_UPLINE_ACCESS_TTL', 3600), // 1 hour
-                    'refresh_token_ttl' => env('JWT_UPLINE_REFRESH_TTL', 604800), // 7 days
-                ],
-                'member' => [
-                    'secret' => env('JWT_MEMBER_SECRET', 'your-member-secret-key'),
-                    'issuer' => env('JWT_ISSUER', 'lottery-api'),
-                    'audience' => 'member',
-                    'access_token_ttl' => env('JWT_MEMBER_ACCESS_TTL', 1800), // 30 minutes
-                    'refresh_token_ttl' => env('JWT_MEMBER_REFRESH_TTL', 86400), // 1 day
-                ],
-            ];
-        });
+        $this->app->singleton('jwt.config', fn ($app): array => [
+            'upline' => [
+                'secret' => env('JWT_UPLINE_SECRET', 'your-upline-secret-key'),
+                'issuer' => env('JWT_ISSUER', 'lottery-api'),
+                'audience' => 'upline',
+                'access_token_ttl' => env('JWT_UPLINE_ACCESS_TTL', 3600), // 1 hour
+                'refresh_token_ttl' => env('JWT_UPLINE_REFRESH_TTL', 604800), // 7 days
+            ],
+            'member' => [
+                'secret' => env('JWT_MEMBER_SECRET', 'your-member-secret-key'),
+                'issuer' => env('JWT_ISSUER', 'lottery-api'),
+                'audience' => 'member',
+                'access_token_ttl' => env('JWT_MEMBER_ACCESS_TTL', 1800), // 30 minutes
+                'refresh_token_ttl' => env('JWT_MEMBER_REFRESH_TTL', 86400), // 1 day
+            ],
+        ]);
 
         // Register domain service
         $this->app->singleton(AuthenticationDomainService::class);
@@ -67,12 +67,8 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Register gates and policies here if needed
-        Gate::define('upline-access', function ($user) {
-            return in_array($user->agent_type, ['company', 'super_senior', 'senior', 'master', 'agent']);
-        });
+        Gate::define('upline-access', fn ($user): bool => in_array($user->agent_type, ['company', 'super_senior', 'senior', 'master', 'agent']));
 
-        Gate::define('member-access', function ($user) {
-            return $user->agent_type === 'member';
-        });
+        Gate::define('member-access', fn ($user): bool => $user->agent_type === 'member');
     }
 }

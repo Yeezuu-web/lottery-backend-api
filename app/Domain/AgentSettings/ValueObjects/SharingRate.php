@@ -1,20 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\AgentSettings\ValueObjects;
 
 use InvalidArgumentException;
+use Stringable;
 
-final class SharingRate
+final readonly class SharingRate implements Stringable
 {
-    private readonly float $rate;
+    private float $rate;
 
-    private readonly float $maxRate;
+    private float $maxRate;
 
     public function __construct(float $rate, float $maxRate = 100.0)
     {
         $this->validateRate($rate, $maxRate);
         $this->rate = $rate;
         $this->maxRate = $maxRate;
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('SharingRate(%.2f%%, max: %.2f%%)', $this->rate, $this->maxRate);
     }
 
     public static function fromPercentage(float $percentage, float $maxRate = 100.0): self
@@ -86,7 +94,7 @@ final class SharingRate
         ];
     }
 
-    public function equals(SharingRate $other): bool
+    public function equals(self $other): bool
     {
         return $this->rate === $other->rate &&
                $this->maxRate === $other->maxRate;
@@ -111,10 +119,5 @@ final class SharingRate
                 )
             );
         }
-    }
-
-    public function __toString(): string
-    {
-        return sprintf('SharingRate(%.2f%%, max: %.2f%%)', $this->rate, $this->maxRate);
     }
 }

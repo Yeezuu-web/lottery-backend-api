@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Auth\ValueObjects;
 
 use App\Shared\Exceptions\ValidationException;
-use DateTime;
+use DateTimeImmutable;
 
-final class TokenPair
+final readonly class TokenPair
 {
-    private readonly JWTToken $accessToken;
+    private JWTToken $accessToken;
 
-    private readonly JWTToken $refreshToken;
+    private JWTToken $refreshToken;
 
     public function __construct(JWTToken $accessToken, JWTToken $refreshToken)
     {
@@ -37,7 +39,7 @@ final class TokenPair
     public function needsRefresh(): bool
     {
         // Refresh if access token expires within 5 minutes
-        $threshold = new DateTime('+5 minutes');
+        $threshold = new DateTimeImmutable('+5 minutes');
 
         return $this->accessToken->expiresAt() <= $threshold;
     }

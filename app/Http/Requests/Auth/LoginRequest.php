@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class LoginRequest extends FormRequest
+final class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -53,6 +55,21 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Get the validated data from the request.
+     */
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated($key, $default);
+
+        // Trim whitespace from username
+        if (isset($data['username'])) {
+            $data['username'] = mb_trim($data['username']);
+        }
+
+        return $data;
+    }
+
+    /**
      * Handle a failed validation attempt.
      */
     protected function failedValidation(Validator $validator): void
@@ -66,20 +83,5 @@ class LoginRequest extends FormRequest
                 'errors' => $errors,
             ], 422)
         );
-    }
-
-    /**
-     * Get the validated data from the request.
-     */
-    public function validated($key = null, $default = null)
-    {
-        $data = parent::validated($key, $default);
-
-        // Trim whitespace from username
-        if (isset($data['username'])) {
-            $data['username'] = trim($data['username']);
-        }
-
-        return $data;
     }
 }

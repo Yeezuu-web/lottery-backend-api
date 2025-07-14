@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Order\Repositories;
 
 use App\Application\Order\Contracts\CartRepositoryInterface;
@@ -7,9 +9,10 @@ use App\Domain\Agent\Models\Agent;
 use App\Domain\Order\ValueObjects\BetData;
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Infrastructure\Order\Models\EloquentCart;
-use DateTime;
+use DateTimeImmutable;
+use Exception;
 
-final class CartRepository implements CartRepositoryInterface
+final readonly class CartRepository implements CartRepositoryInterface
 {
     public function __construct(
         private EloquentCart $model
@@ -39,8 +42,8 @@ final class CartRepository implements CartRepositoryInterface
             'total_amount' => $totalAmount->amount(),
             'currency' => $totalAmount->currency(),
             'status' => $cartItem->status,
-            'created_at' => new DateTime($cartItem->created_at),
-            'updated_at' => new DateTime($cartItem->updated_at),
+            'created_at' => new DateTimeImmutable($cartItem->created_at),
+            'updated_at' => new DateTimeImmutable($cartItem->updated_at),
         ];
     }
 
@@ -52,20 +55,18 @@ final class CartRepository implements CartRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $cartItems->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'agent_id' => $item->agent_id,
-                'bet_data' => BetData::fromArray($item->bet_data),
-                'expanded_numbers' => $item->expanded_numbers,
-                'channel_weights' => $item->channel_weights,
-                'total_amount' => $item->total_amount,
-                'currency' => $item->currency,
-                'status' => $item->status,
-                'created_at' => new DateTime($item->created_at),
-                'updated_at' => new DateTime($item->updated_at),
-            ];
-        })->toArray();
+        return $cartItems->map(fn ($item): array => [
+            'id' => $item->id,
+            'agent_id' => $item->agent_id,
+            'bet_data' => BetData::fromArray($item->bet_data),
+            'expanded_numbers' => $item->expanded_numbers,
+            'channel_weights' => $item->channel_weights,
+            'total_amount' => $item->total_amount,
+            'currency' => $item->currency,
+            'status' => $item->status,
+            'created_at' => new DateTimeImmutable($item->created_at),
+            'updated_at' => new DateTimeImmutable($item->updated_at),
+        ])->toArray();
     }
 
     public function removeItem(Agent $agent, int $itemId): bool
@@ -124,8 +125,8 @@ final class CartRepository implements CartRepositoryInterface
             ->where('status', 'active')
             ->first();
 
-        if (!$cartItem) {
-            throw new \Exception('Cart item not found');
+        if (! $cartItem) {
+            throw new Exception('Cart item not found');
         }
 
         $cartItem->bet_data = $betData->toArray();
@@ -133,7 +134,7 @@ final class CartRepository implements CartRepositoryInterface
         $cartItem->channel_weights = $channelWeights;
         $cartItem->total_amount = $totalAmount->amount();
         $cartItem->currency = $totalAmount->currency();
-        $cartItem->updated_at = new DateTime;
+        $cartItem->updated_at = new DateTimeImmutable;
 
         $cartItem->save();
 
@@ -146,7 +147,7 @@ final class CartRepository implements CartRepositoryInterface
             'total_amount' => $totalAmount->amount(),
             'currency' => $totalAmount->currency(),
             'status' => $cartItem->status,
-            'created_at' => new DateTime($cartItem->created_at),
+            'created_at' => new DateTimeImmutable($cartItem->created_at),
             'updated_at' => $cartItem->updated_at,
         ];
     }
@@ -174,7 +175,7 @@ final class CartRepository implements CartRepositoryInterface
             ->where('status', 'active')
             ->update([
                 'status' => 'submitted',
-                'updated_at' => new DateTime,
+                'updated_at' => new DateTimeImmutable,
             ]);
     }
 

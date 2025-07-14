@@ -1,20 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\DTOs;
 
-final class AuthenticateUserCommand
+final readonly class AuthenticateUserCommand
 {
-    public readonly string $username;
+    public string $username;
 
-    public readonly string $password;
-
-    public readonly string $audience;
-
-    public function __construct(string $username, string $password, string $audience)
+    public function __construct(string $username, public string $password, public string $audience)
     {
-        $this->username = trim($username);
-        $this->password = $password;
-        $this->audience = $audience;
+        $this->username = mb_trim($username);
     }
 
     public function toArray(): array

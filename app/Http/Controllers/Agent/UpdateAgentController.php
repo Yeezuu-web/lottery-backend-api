@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Agent;
 
 use App\Application\Agent\Commands\UpdateAgentCommand;
@@ -9,7 +11,7 @@ use App\Http\Requests\Agent\UpdateAgentRequest;
 use App\Traits\HttpApiResponse;
 use Illuminate\Http\JsonResponse;
 
-class UpdateAgentController extends Controller
+final class UpdateAgentController extends Controller
 {
     use HttpApiResponse;
 

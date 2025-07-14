@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Agent\UseCases;
 
 use App\Application\Agent\Commands\GetAgentsCommand;
@@ -11,18 +13,18 @@ use App\Domain\Agent\Models\Agent;
 use App\Domain\Agent\Services\AgentDomainService;
 use App\Domain\Agent\ValueObjects\AgentType;
 
-final class GetAgentsUseCase
+final readonly class GetAgentsUseCase
 {
     public function __construct(
-        private readonly AgentRepositoryInterface $agentRepository,
-        private readonly AgentDomainService $agentDomainService
+        private AgentRepositoryInterface $agentRepository,
+        private AgentDomainService $agentDomainService
     ) {}
 
     public function execute(GetAgentsCommand $command): AgentListResponse
     {
         // Find the viewer agent
         $viewer = $this->agentRepository->findById($command->getViewerId());
-        if (! $viewer) {
+        if (! $viewer instanceof Agent) {
             throw AgentException::notFound($command->getViewerId());
         }
 
@@ -76,7 +78,7 @@ final class GetAgentsUseCase
         // If targeting specific agent, get their downlines
         if ($command->getTargetAgentId() !== null) {
             $targetAgent = $this->agentRepository->findById($command->getTargetAgentId());
-            if (! $targetAgent) {
+            if (! $targetAgent instanceof Agent) {
                 throw AgentException::notFound($command->getTargetAgentId());
             }
 
@@ -146,7 +148,7 @@ final class GetAgentsUseCase
     private function getCreatableAgentTypes(Agent $agent): array
     {
         $creatableTypes = [];
-        $currentLevel = $agent->getHierarchyLevel();
+        $agent->getHierarchyLevel();
 
         // Each agent can create agents one level below
         switch ($agent->agentType()->value()) {

@@ -1,94 +1,76 @@
 <?php
 
-namespace Tests\Unit\Application\Auth\DTOs;
-
+declare(strict_types=1);
 use App\Application\Auth\DTOs\OperationResponse;
-use PHPUnit\Framework\TestCase;
 
-class OperationResponseTest extends TestCase
-{
-    public function test_can_create_operation_response()
-    {
-        $success = true;
-        $message = 'Operation successful';
-        $data = ['key' => 'value'];
+test('can create operation response', function (): void {
+    $success = true;
+    $message = 'Operation successful';
+    $data = ['key' => 'value'];
 
-        $response = new OperationResponse($success, $message, $data);
+    $response = new OperationResponse($success, $message, $data);
 
-        $this->assertEquals($success, $response->success);
-        $this->assertEquals($message, $response->message);
-        $this->assertEquals($data, $response->data);
-    }
+    expect($response->success)->toEqual($success);
+    expect($response->message)->toEqual($message);
+    expect($response->data)->toEqual($data);
+});
+test('success static method', function (): void {
+    $message = 'Operation successful';
+    $data = ['key' => 'value'];
 
-    public function test_success_static_method()
-    {
-        $message = 'Operation successful';
-        $data = ['key' => 'value'];
+    $response = OperationResponse::success($message, $data);
 
-        $response = OperationResponse::success($message, $data);
+    expect($response->success)->toBeTrue();
+    expect($response->message)->toEqual($message);
+    expect($response->data)->toEqual($data);
+});
+test('success static method without data', function (): void {
+    $message = 'Operation successful';
 
-        $this->assertTrue($response->success);
-        $this->assertEquals($message, $response->message);
-        $this->assertEquals($data, $response->data);
-    }
+    $response = OperationResponse::success($message);
 
-    public function test_success_static_method_without_data()
-    {
-        $message = 'Operation successful';
+    expect($response->success)->toBeTrue();
+    expect($response->message)->toEqual($message);
+    expect($response->data)->toEqual([]);
+});
+test('failure static method', function (): void {
+    $message = 'Operation failed';
+    $data = ['error' => 'Something went wrong'];
 
-        $response = OperationResponse::success($message);
+    $response = OperationResponse::failure($message, $data);
 
-        $this->assertTrue($response->success);
-        $this->assertEquals($message, $response->message);
-        $this->assertEquals([], $response->data);
-    }
+    expect($response->success)->toBeFalse();
+    expect($response->message)->toEqual($message);
+    expect($response->data)->toEqual($data);
+});
+test('failure static method without data', function (): void {
+    $message = 'Operation failed';
 
-    public function test_failure_static_method()
-    {
-        $message = 'Operation failed';
-        $data = ['error' => 'Something went wrong'];
+    $response = OperationResponse::failure($message);
 
-        $response = OperationResponse::failure($message, $data);
+    expect($response->success)->toBeFalse();
+    expect($response->message)->toEqual($message);
+    expect($response->data)->toEqual([]);
+});
+test('to array returns correct structure', function (): void {
+    $success = true;
+    $message = 'Operation successful';
+    $data = ['key' => 'value'];
 
-        $this->assertFalse($response->success);
-        $this->assertEquals($message, $response->message);
-        $this->assertEquals($data, $response->data);
-    }
+    $response = new OperationResponse($success, $message, $data);
+    $array = $response->toArray();
 
-    public function test_failure_static_method_without_data()
-    {
-        $message = 'Operation failed';
+    expect($array)->toEqual([
+        'success' => $success,
+        'message' => $message,
+        'data' => $data,
+    ]);
+});
+test('properties are readonly', function (): void {
+    $response = new OperationResponse(true, 'Test message', []);
 
-        $response = OperationResponse::failure($message);
-
-        $this->assertFalse($response->success);
-        $this->assertEquals($message, $response->message);
-        $this->assertEquals([], $response->data);
-    }
-
-    public function test_to_array_returns_correct_structure()
-    {
-        $success = true;
-        $message = 'Operation successful';
-        $data = ['key' => 'value'];
-
-        $response = new OperationResponse($success, $message, $data);
-        $array = $response->toArray();
-
-        $this->assertEquals([
-            'success' => $success,
-            'message' => $message,
-            'data' => $data,
-        ], $array);
-    }
-
-    public function test_properties_are_readonly()
-    {
-        $response = new OperationResponse(true, 'Test message', []);
-
-        // These should be readonly properties
-        $this->assertTrue(property_exists($response, 'success'));
-        $this->assertTrue(property_exists($response, 'message'));
-        $this->assertTrue(property_exists($response, 'data'));
-    }
-}
+    // These should be readonly properties
+    expect(property_exists($response, 'success'))->toBeTrue();
+    expect(property_exists($response, 'message'))->toBeTrue();
+    expect(property_exists($response, 'data'))->toBeTrue();
+});

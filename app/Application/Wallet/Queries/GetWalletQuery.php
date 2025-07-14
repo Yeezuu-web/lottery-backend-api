@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\Queries;
 
-final class GetWalletQuery
+final readonly class GetWalletQuery
 {
     public function __construct(
-        public readonly int $walletId,
-        public readonly bool $includeBalance = true,
-        public readonly bool $includeTransactions = false,
-        public readonly ?int $transactionLimit = null
+        public int $walletId,
+        public bool $includeBalance = true,
+        public bool $includeTransactions = false,
+        public ?int $transactionLimit = null
     ) {}
 
     public function toArray(): array

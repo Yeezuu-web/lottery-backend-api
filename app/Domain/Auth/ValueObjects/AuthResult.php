@@ -1,33 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Auth\ValueObjects;
 
 use App\Domain\Agent\Models\Agent;
-use DateTime;
+use DateTimeImmutable;
 
-final class AuthResult
+final readonly class AuthResult
 {
-    private readonly bool $success;
-
-    private readonly ?Agent $agent;
-
-    private readonly ?TokenPair $tokenPair;
-
-    private readonly ?string $errorMessage;
-
-    private readonly DateTime $authenticatedAt;
+    private DateTimeImmutable $authenticatedAt;
 
     private function __construct(
-        bool $success,
-        ?Agent $agent = null,
-        ?TokenPair $tokenPair = null,
-        ?string $errorMessage = null
+        private bool $success,
+        private ?Agent $agent = null,
+        private ?TokenPair $tokenPair = null,
+        private ?string $errorMessage = null
     ) {
-        $this->success = $success;
-        $this->agent = $agent;
-        $this->tokenPair = $tokenPair;
-        $this->errorMessage = $errorMessage;
-        $this->authenticatedAt = new DateTime;
+        $this->authenticatedAt = new DateTimeImmutable;
     }
 
     public static function success(Agent $agent, TokenPair $tokenPair): self
@@ -65,7 +55,7 @@ final class AuthResult
         return $this->errorMessage;
     }
 
-    public function authenticatedAt(): DateTime
+    public function authenticatedAt(): DateTimeImmutable
     {
         return $this->authenticatedAt;
     }

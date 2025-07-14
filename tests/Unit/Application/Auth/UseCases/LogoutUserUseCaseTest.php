@@ -1,210 +1,180 @@
 <?php
 
-namespace Tests\Unit\Application\Auth\UseCases;
-
+declare(strict_types=1);
 use App\Application\Auth\DTOs\OperationResponse;
 use App\Application\Auth\UseCases\LogoutUserUseCase;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
-use Mockery;
-use PHPUnit\Framework\TestCase;
 use Tests\Helpers\AuthTestHelper;
 
-class LogoutUserUseCaseTest extends TestCase
-{
-    private $tokenService;
+beforeEach(function (): void {
+    $this->tokenService = Mockery::mock(TokenServiceInterface::class);
+    $this->authInfrastructureService = Mockery::mock(AuthenticationServiceInterface::class);
 
-    private $authInfrastructureService;
+    $this->useCase = new LogoutUserUseCase(
+        $this->tokenService,
+        $this->authInfrastructureService
+    );
+});
+afterEach(function (): void {
+    Mockery::close();
+});
+test('successful logout', function (): void {
+    // Arrange
+    $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
+    $refreshToken = AuthTestHelper::createTestJWTToken('valid-refresh-token', 123, 'upline');
+    $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
 
-    private $useCase;
+    // Mock expectations
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($token);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
+        ->once()
+        ->with(123, 'upline')
+        ->andReturn($refreshToken);
 
-        $this->tokenService = Mockery::mock(TokenServiceInterface::class);
-        $this->authInfrastructureService = Mockery::mock(AuthenticationServiceInterface::class);
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($refreshToken);
 
-        $this->useCase = new LogoutUserUseCase(
-            $this->tokenService,
-            $this->authInfrastructureService
-        );
-    }
+    $this->authInfrastructureService->shouldReceive('clearSessionData')
+        ->once()
+        ->with(123);
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
+    // Act
+    $result = $this->useCase->execute($command);
 
-    public function test_successful_logout()
-    {
-        // Arrange
-        $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
-        $refreshToken = AuthTestHelper::createTestJWTToken('valid-refresh-token', 123, 'upline');
-        $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
+    // Assert
+    expect($result)->toBeInstanceOf(OperationResponse::class);
+    expect($result->success)->toBeTrue();
+    expect($result->message)->toEqual('Logout successful');
+    expect($result->data)->toEqual([]);
+});
+test('logout fails with expired token', function (): void {
+    // Arrange
+    $expiredToken = AuthTestHelper::createExpiredJWTToken('expired-access-token', 123, 'upline');
+    $command = AuthTestHelper::createLogoutUserCommand($expiredToken, 'upline');
 
-        // Mock expectations
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($token);
+    // Act & Assert
+    $this->expectException(AuthenticationException::class);
+    $this->expectExceptionMessage('Token has expired');
 
-        $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
-            ->once()
-            ->with(123, 'upline')
-            ->andReturn($refreshToken);
+    $this->useCase->execute($command);
+});
+test('logout without refresh token', function (): void {
+    // Arrange
+    $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
+    $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
 
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($refreshToken);
+    // Mock expectations
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($token);
 
-        $this->authInfrastructureService->shouldReceive('clearSessionData')
-            ->once()
-            ->with(123);
+    $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
+        ->once()
+        ->with(123, 'upline')
+        ->andReturn(null);
 
-        // Act
-        $result = $this->useCase->execute($command);
+    // No refresh token found
+    $this->authInfrastructureService->shouldReceive('clearSessionData')
+        ->once()
+        ->with(123);
 
-        // Assert
-        $this->assertInstanceOf(OperationResponse::class, $result);
-        $this->assertTrue($result->success);
-        $this->assertEquals('Logout successful', $result->message);
-        $this->assertEquals([], $result->data);
-    }
+    // Act
+    $result = $this->useCase->execute($command);
 
-    public function test_logout_fails_with_expired_token()
-    {
-        // Arrange
-        $expiredToken = AuthTestHelper::createExpiredJWTToken('expired-access-token', 123, 'upline');
-        $command = AuthTestHelper::createLogoutUserCommand($expiredToken, 'upline');
+    // Assert
+    expect($result)->toBeInstanceOf(OperationResponse::class);
+    expect($result->success)->toBeTrue();
+    expect($result->message)->toEqual('Logout successful');
+});
+test('logout with member audience', function (): void {
+    // Arrange
+    $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'member');
+    $refreshToken = AuthTestHelper::createTestJWTToken('valid-refresh-token', 123, 'member');
+    $command = AuthTestHelper::createLogoutUserCommand($token, 'member');
 
-        // Act & Assert
-        $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage('Token has expired');
+    // Mock expectations
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($token);
 
-        $this->useCase->execute($command);
-    }
+    $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
+        ->once()
+        ->with(123, 'member')
+        ->andReturn($refreshToken);
 
-    public function test_logout_without_refresh_token()
-    {
-        // Arrange
-        $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
-        $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($refreshToken);
 
-        // Mock expectations
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($token);
+    $this->authInfrastructureService->shouldReceive('clearSessionData')
+        ->once()
+        ->with(123);
 
-        $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
-            ->once()
-            ->with(123, 'upline')
-            ->andReturn(null); // No refresh token found
+    // Act
+    $result = $this->useCase->execute($command);
 
-        $this->authInfrastructureService->shouldReceive('clearSessionData')
-            ->once()
-            ->with(123);
+    // Assert
+    expect($result)->toBeInstanceOf(OperationResponse::class);
+    expect($result->success)->toBeTrue();
+    expect($result->message)->toEqual('Logout successful');
+});
+test('workflow follows correct sequence', function (): void {
+    // Arrange
+    $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
+    $refreshToken = AuthTestHelper::createTestJWTToken('valid-refresh-token', 123, 'upline');
+    $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
 
-        // Act
-        $result = $this->useCase->execute($command);
+    // Mock expectations in order
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($token)
+        ->ordered();
 
-        // Assert
-        $this->assertInstanceOf(OperationResponse::class, $result);
-        $this->assertTrue($result->success);
-        $this->assertEquals('Logout successful', $result->message);
-    }
+    $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
+        ->once()
+        ->with(123, 'upline')
+        ->andReturn($refreshToken)
+        ->ordered();
 
-    public function test_logout_with_member_audience()
-    {
-        // Arrange
-        $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'member');
-        $refreshToken = AuthTestHelper::createTestJWTToken('valid-refresh-token', 123, 'member');
-        $command = AuthTestHelper::createLogoutUserCommand($token, 'member');
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($refreshToken)
+        ->ordered();
 
-        // Mock expectations
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($token);
+    $this->authInfrastructureService->shouldReceive('clearSessionData')
+        ->once()
+        ->with(123)
+        ->ordered();
 
-        $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
-            ->once()
-            ->with(123, 'member')
-            ->andReturn($refreshToken);
+    // Act
+    $result = $this->useCase->execute($command);
 
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($refreshToken);
+    // Assert
+    expect($result)->toBeInstanceOf(OperationResponse::class);
+    expect($result->success)->toBeTrue();
+});
+test('logout handles blacklist failure gracefully', function (): void {
+    // Arrange
+    $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
+    $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
 
-        $this->authInfrastructureService->shouldReceive('clearSessionData')
-            ->once()
-            ->with(123);
+    // Mock expectations - blacklisting might fail and exception should bubble up
+    $this->authInfrastructureService->shouldReceive('blacklistToken')
+        ->once()
+        ->with($token)
+        ->andThrow(new Exception('Cache service unavailable'));
 
-        // Act
-        $result = $this->useCase->execute($command);
+    // No other methods should be called since the exception is thrown early
+    // The use case should let the exception bubble up since the current implementation doesn't catch it
+    $this->expectException(Exception::class);
+    $this->expectExceptionMessage('Cache service unavailable');
 
-        // Assert
-        $this->assertInstanceOf(OperationResponse::class, $result);
-        $this->assertTrue($result->success);
-        $this->assertEquals('Logout successful', $result->message);
-    }
-
-    public function test_workflow_follows_correct_sequence()
-    {
-        // Arrange
-        $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
-        $refreshToken = AuthTestHelper::createTestJWTToken('valid-refresh-token', 123, 'upline');
-        $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
-
-        // Mock expectations in order
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($token)
-            ->ordered();
-
-        $this->authInfrastructureService->shouldReceive('findRefreshTokenByAgent')
-            ->once()
-            ->with(123, 'upline')
-            ->andReturn($refreshToken)
-            ->ordered();
-
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($refreshToken)
-            ->ordered();
-
-        $this->authInfrastructureService->shouldReceive('clearSessionData')
-            ->once()
-            ->with(123)
-            ->ordered();
-
-        // Act
-        $result = $this->useCase->execute($command);
-
-        // Assert
-        $this->assertInstanceOf(OperationResponse::class, $result);
-        $this->assertTrue($result->success);
-    }
-
-    public function test_logout_handles_blacklist_failure_gracefully()
-    {
-        // Arrange
-        $token = AuthTestHelper::createTestJWTToken('valid-access-token', 123, 'upline');
-        $command = AuthTestHelper::createLogoutUserCommand($token, 'upline');
-
-        // Mock expectations - blacklisting might fail and exception should bubble up
-        $this->authInfrastructureService->shouldReceive('blacklistToken')
-            ->once()
-            ->with($token)
-            ->andThrow(new \Exception('Cache service unavailable'));
-
-        // No other methods should be called since the exception is thrown early
-
-        // The use case should let the exception bubble up since the current implementation doesn't catch it
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Cache service unavailable');
-
-        // Act
-        $this->useCase->execute($command);
-    }
-}
+    // Act
+    $this->useCase->execute($command);
+});

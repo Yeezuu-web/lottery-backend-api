@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Agent;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateAgentRequest extends FormRequest
+final class UpdateAgentRequest extends FormRequest
 {
     public function authorize(): bool
     {

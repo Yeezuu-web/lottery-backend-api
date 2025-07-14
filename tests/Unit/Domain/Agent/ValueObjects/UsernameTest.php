@@ -1,144 +1,120 @@
 <?php
 
-namespace Tests\Unit\Domain\Agent\ValueObjects;
-
+declare(strict_types=1);
 use App\Domain\Agent\ValueObjects\AgentType;
 use App\Domain\Agent\ValueObjects\Username;
 use App\Shared\Exceptions\ValidationException;
-use PHPUnit\Framework\TestCase;
 
-class UsernameTest extends TestCase
-{
-    public function test_creates_valid_company_username(): void
-    {
-        $username = new Username('A');
+test('creates valid company username', function (): void {
+    $username = new Username('A');
 
-        $this->assertEquals('A', $username->value());
-        $this->assertEquals(AgentType::COMPANY, $username->getAgentTypeFromLength()->value());
-        $this->assertTrue($username->isValidForAgentType(new AgentType(AgentType::COMPANY)));
-    }
+    expect($username->value())->toEqual('A');
+    expect($username->getAgentTypeFromLength()->value())->toEqual(AgentType::COMPANY);
+    expect($username->isValidForAgentType(new AgentType(AgentType::COMPANY)))->toBeTrue();
+});
+test('creates valid super senior username', function (): void {
+    $username = new Username('AB');
 
-    public function test_creates_valid_super_senior_username(): void
-    {
-        $username = new Username('AB');
+    expect($username->value())->toEqual('AB');
+    expect($username->getAgentTypeFromLength()->value())->toEqual(AgentType::SUPER_SENIOR);
+    expect($username->isValidForAgentType(new AgentType(AgentType::SUPER_SENIOR)))->toBeTrue();
+});
+test('creates valid member username', function (): void {
+    $username = new Username('ABCDABCD123');
 
-        $this->assertEquals('AB', $username->value());
-        $this->assertEquals(AgentType::SUPER_SENIOR, $username->getAgentTypeFromLength()->value());
-        $this->assertTrue($username->isValidForAgentType(new AgentType(AgentType::SUPER_SENIOR)));
-    }
+    expect($username->value())->toEqual('ABCDABCD123');
+    expect($username->getAgentTypeFromLength()->value())->toEqual(AgentType::MEMBER);
+    expect($username->isValidForAgentType(new AgentType(AgentType::MEMBER)))->toBeTrue();
+});
+test('converts to uppercase', function (): void {
+    $username = new Username('abcd');
 
-    public function test_creates_valid_member_username(): void
-    {
-        $username = new Username('ABCDABCD123');
+    expect($username->value())->toEqual('ABCD');
+});
+test('throws exception for empty username', function (): void {
+    $this->expectException(ValidationException::class);
+    $this->expectExceptionMessage('Username cannot be empty');
 
-        $this->assertEquals('ABCDABCD123', $username->value());
-        $this->assertEquals(AgentType::MEMBER, $username->getAgentTypeFromLength()->value());
-        $this->assertTrue($username->isValidForAgentType(new AgentType(AgentType::MEMBER)));
-    }
+    new Username('');
+});
+test('throws exception for invalid characters', function (): void {
+    $this->expectException(ValidationException::class);
+    $this->expectExceptionMessage('Username can only contain letters and numbers');
 
-    public function test_converts_to_uppercase(): void
-    {
-        $username = new Username('abcd');
+    new Username('ABC@DEF');
+});
+test('throws exception for invalid length', function (): void {
+    $this->expectException(ValidationException::class);
+    $this->expectExceptionMessage('Invalid username length. Must be 1, 2, 4, 6, 8, or 11 characters');
 
-        $this->assertEquals('ABCD', $username->value());
-    }
+    new Username('ABC');
+    // 3 characters is invalid
+});
+test('gets correct parent username', function (): void {
+    // Super Senior -> Company
+    $superSenior = new Username('AB');
+    expect($superSenior->getParentUsername())->toEqual('A');
 
-    public function test_throws_exception_for_empty_username(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Username cannot be empty');
+    // Senior -> Super Senior
+    $senior = new Username('ABCD');
+    expect($senior->getParentUsername())->toEqual('AB');
 
-        new Username('');
-    }
+    // Master -> Senior
+    $master = new Username('ABCDEF');
+    expect($master->getParentUsername())->toEqual('ABCD');
 
-    public function test_throws_exception_for_invalid_characters(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Username can only contain letters and numbers');
+    // Agent -> Master
+    $agent = new Username('ABCDEFGH');
+    expect($agent->getParentUsername())->toEqual('ABCDEF');
 
-        new Username('ABC@DEF');
-    }
+    // Member -> Agent
+    $member = new Username('ABCDEFGH123');
+    expect($member->getParentUsername())->toEqual('ABCDEFGH');
 
-    public function test_throws_exception_for_invalid_length(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Invalid username length. Must be 1, 2, 4, 6, 8, or 11 characters');
+    // Company has no parent
+    $company = new Username('A');
+    expect($company->getParentUsername())->toBeNull();
+});
+test('validates child relationship', function (): void {
+    $company = new Username('A');
+    $superSenior = new Username('AB');
+    $senior = new Username('ABCD');
+    $invalidSenior = new Username('CDEF');
 
-        new Username('ABC'); // 3 characters is invalid
-    }
+    expect($superSenior->isChildOf($company))->toBeTrue();
+    expect($senior->isChildOf($superSenior))->toBeTrue();
+    expect($invalidSenior->isChildOf($superSenior))->toBeFalse();
+    expect($company->isChildOf($superSenior))->toBeFalse();
+    // Company has no parent
+});
+test('validates username for agent type', function (): void {
+    $companyUsername = new Username('A');
+    $memberUsername = new Username('ABCDEFGH123');
+    $invalidMemberUsername = new Username('ABCDEFGH');
 
-    public function test_gets_correct_parent_username(): void
-    {
-        // Super Senior -> Company
-        $superSenior = new Username('AB');
-        $this->assertEquals('A', $superSenior->getParentUsername());
+    // Should be 11 chars for member
+    expect($companyUsername->isValidForAgentType(new AgentType(AgentType::COMPANY)))->toBeTrue();
+    expect($companyUsername->isValidForAgentType(new AgentType(AgentType::MEMBER)))->toBeFalse();
 
-        // Senior -> Super Senior
-        $senior = new Username('ABCD');
-        $this->assertEquals('AB', $senior->getParentUsername());
+    expect($memberUsername->isValidForAgentType(new AgentType(AgentType::MEMBER)))->toBeTrue();
+    expect($memberUsername->isValidForAgentType(new AgentType(AgentType::COMPANY)))->toBeFalse();
 
-        // Master -> Senior
-        $master = new Username('ABCDEF');
-        $this->assertEquals('ABCD', $master->getParentUsername());
+    expect($invalidMemberUsername->isValidForAgentType(new AgentType(AgentType::MEMBER)))->toBeFalse();
+});
+test('generates next username', function (): void {
+    $company = new Username('A');
+    $agentType = new AgentType(AgentType::SUPER_SENIOR);
 
-        // Agent -> Master
-        $agent = new Username('ABCDEFGH');
-        $this->assertEquals('ABCDEF', $agent->getParentUsername());
+    $nextUsername = Username::generateNextUsername($agentType, $company);
 
-        // Member -> Agent
-        $member = new Username('ABCDEFGH123');
-        $this->assertEquals('ABCDEFGH', $member->getParentUsername());
+    expect($nextUsername->value())->toEqual('AA');
+    expect($nextUsername->isChildOf($company))->toBeTrue();
+});
+test('member username pattern', function (): void {
+    $validMember = new Username('ABCDEFGH000');
+    $invalidMember1 = new Username('ABCDEFGHABC');
 
-        // Company has no parent
-        $company = new Username('A');
-        $this->assertNull($company->getParentUsername());
-    }
-
-    public function test_validates_child_relationship(): void
-    {
-        $company = new Username('A');
-        $superSenior = new Username('AB');
-        $senior = new Username('ABCD');
-        $invalidSenior = new Username('CDEF');
-
-        $this->assertTrue($superSenior->isChildOf($company));
-        $this->assertTrue($senior->isChildOf($superSenior));
-        $this->assertFalse($invalidSenior->isChildOf($superSenior));
-        $this->assertFalse($company->isChildOf($superSenior)); // Company has no parent
-    }
-
-    public function test_validates_username_for_agent_type(): void
-    {
-        $companyUsername = new Username('A');
-        $memberUsername = new Username('ABCDEFGH123');
-        $invalidMemberUsername = new Username('ABCDEFGH'); // Should be 11 chars for member
-
-        $this->assertTrue($companyUsername->isValidForAgentType(new AgentType(AgentType::COMPANY)));
-        $this->assertFalse($companyUsername->isValidForAgentType(new AgentType(AgentType::MEMBER)));
-
-        $this->assertTrue($memberUsername->isValidForAgentType(new AgentType(AgentType::MEMBER)));
-        $this->assertFalse($memberUsername->isValidForAgentType(new AgentType(AgentType::COMPANY)));
-
-        $this->assertFalse($invalidMemberUsername->isValidForAgentType(new AgentType(AgentType::MEMBER)));
-    }
-
-    public function test_generates_next_username(): void
-    {
-        $company = new Username('A');
-        $agentType = new AgentType(AgentType::SUPER_SENIOR);
-
-        $nextUsername = Username::generateNextUsername($agentType, $company);
-
-        $this->assertEquals('AA', $nextUsername->value());
-        $this->assertTrue($nextUsername->isChildOf($company));
-    }
-
-    public function test_member_username_pattern(): void
-    {
-        $validMember = new Username('ABCDEFGH000');
-        $invalidMember1 = new Username('ABCDEFGHABC'); // Letters instead of numbers
-
-        $this->assertTrue($validMember->isValidForAgentType(new AgentType(AgentType::MEMBER)));
-        $this->assertFalse($invalidMember1->isValidForAgentType(new AgentType(AgentType::MEMBER)));
-    }
-}
+    // Letters instead of numbers
+    expect($validMember->isValidForAgentType(new AgentType(AgentType::MEMBER)))->toBeTrue();
+    expect($invalidMember1->isValidForAgentType(new AgentType(AgentType::MEMBER)))->toBeFalse();
+});

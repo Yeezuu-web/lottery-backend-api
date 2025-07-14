@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Order;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class SubmitCartRequest extends FormRequest
+final class SubmitCartRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

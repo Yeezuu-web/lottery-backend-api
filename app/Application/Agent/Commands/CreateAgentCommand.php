@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Agent\Commands;
 
-final class CreateAgentCommand
+final readonly class CreateAgentCommand
 {
     public function __construct(
-        private readonly string $username,
-        private readonly string $agentType,
-        private readonly int $creatorId,
-        private readonly string $name,
-        private readonly string $email,
-        private readonly ?string $password = null,
-        private readonly ?int $uplineId = null
+        private string $username,
+        private string $agentType,
+        private int $creatorId,
+        private string $name,
+        private string $email,
+        private ?string $password = null,
+        private ?int $uplineId = null
     ) {}
 
     public function getUsername(): string

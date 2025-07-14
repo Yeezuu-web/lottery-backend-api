@@ -1,17 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\AgentSettings\ValueObjects;
 
 use InvalidArgumentException;
+use Stringable;
 
-final class PayoutProfile
+final readonly class PayoutProfile implements Stringable
 {
-    private readonly array $multipliers;
+    private array $multipliers;
 
     public function __construct(array $multipliers)
     {
         $this->validateMultipliers($multipliers);
         $this->multipliers = $multipliers;
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('PayoutProfile(2D: %s, 3D: %s)', $this->getMultiplier('2D'), $this->getMultiplier('3D'));
     }
 
     public static function fromArray(array $multipliers): self
@@ -90,30 +98,30 @@ final class PayoutProfile
         return 'default';
     }
 
-    public function equals(PayoutProfile $other): bool
+    public function equals(self $other): bool
     {
         return $this->multipliers === $other->multipliers;
     }
 
     private function validateMultipliers(array $multipliers): void
     {
-        if (empty($multipliers)) {
+        if ($multipliers === []) {
             throw new InvalidArgumentException('Payout profile cannot be empty');
         }
 
         $requiredGameTypes = ['2D', '3D'];
         foreach ($requiredGameTypes as $gameType) {
             if (! isset($multipliers[$gameType])) {
-                throw new InvalidArgumentException("Missing multiplier for game type: {$gameType}");
+                throw new InvalidArgumentException('Missing multiplier for game type: '.$gameType);
             }
 
             $multiplier = $multipliers[$gameType];
             if (! is_numeric($multiplier) || $multiplier <= 0) {
-                throw new InvalidArgumentException("Invalid multiplier for {$gameType}: must be a positive number");
+                throw new InvalidArgumentException(sprintf('Invalid multiplier for %s: must be a positive number', $gameType));
             }
 
             if ($multiplier > 1000) {
-                throw new InvalidArgumentException("Multiplier for {$gameType} too high: maximum is 1000");
+                throw new InvalidArgumentException(sprintf('Multiplier for %s too high: maximum is 1000', $gameType));
             }
         }
 
@@ -121,10 +129,5 @@ final class PayoutProfile
         if ($multipliers['2D'] > $multipliers['3D'] / 8) {
             throw new InvalidArgumentException('2D multiplier ratio to 3D multiplier is invalid');
         }
-    }
-
-    public function __toString(): string
-    {
-        return sprintf('PayoutProfile(2D: %s, 3D: %s)', $this->getMultiplier('2D'), $this->getMultiplier('3D'));
     }
 }

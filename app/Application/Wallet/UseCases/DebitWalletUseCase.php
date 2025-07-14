@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\UseCases;
 
 use App\Application\Wallet\Commands\DebitWalletCommand;
@@ -13,23 +15,24 @@ use App\Domain\Wallet\Events\WalletBalanceChanged;
 use App\Domain\Wallet\Exceptions\TransactionException;
 use App\Domain\Wallet\Exceptions\WalletException;
 use App\Domain\Wallet\Models\Transaction;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-final class DebitWalletUseCase
+final readonly class DebitWalletUseCase
 {
     public function __construct(
-        private readonly WalletRepositoryInterface $walletRepository,
-        private readonly TransactionRepositoryInterface $transactionRepository
+        private WalletRepositoryInterface $walletRepository,
+        private TransactionRepositoryInterface $transactionRepository
     ) {}
 
     public function execute(DebitWalletCommand $command): WalletOperationResponse
     {
         try {
-            return DB::transaction(function () use ($command) {
+            return DB::transaction(function () use ($command): WalletOperationResponse {
                 // Find wallet
                 $wallet = $this->walletRepository->findById($command->walletId);
-                if (! $wallet) {
+                if (! $wallet instanceof \App\Domain\Wallet\Models\Wallet) {
                     throw WalletException::notFound($command->walletId);
                 }
 
@@ -107,7 +110,7 @@ final class DebitWalletUseCase
                 message: $e->getMessage(),
                 errors: ['wallet' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Unexpected error during wallet debit', [
                 'wallet_id' => $command->walletId,
                 'amount' => $command->amount->toArray(),

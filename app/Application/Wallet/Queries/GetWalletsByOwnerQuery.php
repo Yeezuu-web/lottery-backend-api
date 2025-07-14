@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\Queries;
 
 use App\Domain\Wallet\ValueObjects\WalletType;
 
-final class GetWalletsByOwnerQuery
+final readonly class GetWalletsByOwnerQuery
 {
     public function __construct(
-        public readonly int $ownerId,
-        public readonly ?WalletType $walletType = null,
-        public readonly bool $activeOnly = true,
-        public readonly bool $includeBalance = true
+        public int $ownerId,
+        public ?WalletType $walletType = null,
+        public bool $activeOnly = true,
+        public bool $includeBalance = true
     ) {}
 
     public function toArray(): array

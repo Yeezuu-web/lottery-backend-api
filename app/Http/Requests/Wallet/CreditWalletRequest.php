@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Wallet;
 
 use App\Domain\Wallet\ValueObjects\Money;
@@ -7,7 +9,7 @@ use App\Domain\Wallet\ValueObjects\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CreditWalletRequest extends FormRequest
+final class CreditWalletRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,7 +20,7 @@ class CreditWalletRequest extends FormRequest
     {
         $creditTypes = array_map(
             fn ($type) => $type->value,
-            array_filter(TransactionType::cases(), fn ($type) => $type->isCredit())
+            array_filter(TransactionType::cases(), fn ($type): bool => $type->isCredit())
         );
 
         return [
@@ -60,17 +62,9 @@ class CreditWalletRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'currency' => $this->currency ?? 'KHR',
-            'reference' => $this->reference ?? $this->generateReference(),
-        ]);
-    }
-
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function ($validator): void {
             // Additional validation logic if needed
             $amount = $this->input('amount');
             if ($amount && $amount > 100000) {
@@ -115,6 +109,14 @@ class CreditWalletRequest extends FormRequest
     public function getRelatedTransactionId(): ?int
     {
         return $this->input('related_transaction_id');
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'currency' => $this->currency ?? 'KHR',
+            'reference' => $this->reference ?? $this->generateReference(),
+        ]);
     }
 
     private function generateReference(): string

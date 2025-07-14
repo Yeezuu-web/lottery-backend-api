@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Wallet\Repositories;
 
 use App\Application\Wallet\Contracts\TransactionRepositoryInterface;
@@ -11,20 +13,21 @@ use App\Infrastructure\Wallet\Models\EloquentTransaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 
-final class TransactionRepository implements TransactionRepositoryInterface
+final readonly class TransactionRepository implements TransactionRepositoryInterface
 {
     private const CACHE_PREFIX = 'transaction';
+
     private const CACHE_TTL = 300; // 5 minutes
 
     public function __construct(
-        private readonly EloquentTransaction $model
+        private EloquentTransaction $model
     ) {}
 
     public function findById(int $transactionId): ?Transaction
     {
         $cacheKey = $this->getCacheKey($transactionId);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($transactionId) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($transactionId): ?\App\Domain\Wallet\Models\Transaction {
             $eloquentTransaction = $this->model
                 ->with(['wallet.owner', 'order', 'relatedTransaction'])
                 ->find($transactionId);
@@ -37,7 +40,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
     {
         $cacheKey = $this->getReferenceCacheKey($reference);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($reference) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($reference): ?\App\Domain\Wallet\Models\Transaction {
             $eloquentTransaction = $this->model
                 ->with(['wallet.owner', 'order', 'relatedTransaction'])
                 ->byReference($reference)
@@ -64,7 +67,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
 
         $eloquentTransactions = $query->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByWalletAndType(int $walletId, TransactionType $transactionType, ?int $limit = null): array
@@ -81,7 +84,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
 
         $eloquentTransactions = $query->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByWalletAndStatus(int $walletId, TransactionStatus $status, ?int $limit = null): array
@@ -98,7 +101,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
 
         $eloquentTransactions = $query->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByWalletAndDateRange(int $walletId, Carbon $fromDate, Carbon $toDate): array
@@ -110,7 +113,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByOrderId(int $orderId): array
@@ -121,7 +124,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByRelatedTransaction(int $relatedTransactionId): array
@@ -132,15 +135,15 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function save(Transaction $transaction): Transaction
     {
         $eloquentTransaction = $this->model->find($transaction->getId());
 
-        if (!$eloquentTransaction) {
-            $eloquentTransaction = new EloquentTransaction();
+        if (! $eloquentTransaction) {
+            $eloquentTransaction = new EloquentTransaction;
         }
 
         $eloquentTransaction->fill([
@@ -167,7 +170,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
     public function delete(int $transactionId): bool
     {
         $transaction = $this->findById($transactionId);
-        if (!$transaction) {
+        if (! $transaction instanceof Transaction) {
             return false;
         }
 
@@ -198,7 +201,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByStatus(TransactionStatus $status): array
@@ -209,7 +212,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByType(TransactionType $type): array
@@ -220,7 +223,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByDateRange(Carbon $fromDate, Carbon $toDate): array
@@ -231,12 +234,12 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function bulkUpdateStatus(array $transactionIds, TransactionStatus $status): bool
     {
-        if (empty($transactionIds)) {
+        if ($transactionIds === []) {
             return false;
         }
 
@@ -250,7 +253,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
         // Clear caches for updated transactions
         foreach ($transactionIds as $transactionId) {
             $transaction = $this->findById($transactionId);
-            if ($transaction) {
+            if ($transaction instanceof Transaction) {
                 $this->clearCache($transaction);
             }
         }
@@ -295,17 +298,15 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->groupBy('type', 'status')
             ->get();
 
-        return $stats->map(function ($stat) {
-            return [
-                'type' => $stat->type,
-                'status' => $stat->status,
-                'count' => $stat->count,
-                'total_amount' => $stat->total_amount,
-                'avg_amount' => $stat->avg_amount,
-                'min_amount' => $stat->min_amount,
-                'max_amount' => $stat->max_amount,
-            ];
-        })->toArray();
+        return $stats->map(fn ($stat): array => [
+            'type' => $stat->type,
+            'status' => $stat->status,
+            'count' => $stat->count,
+            'total_amount' => $stat->total_amount,
+            'avg_amount' => $stat->avg_amount,
+            'min_amount' => $stat->min_amount,
+            'max_amount' => $stat->max_amount,
+        ])->toArray();
     }
 
     public function findExpiredPendingTransactions(Carbon $expiredBefore): array
@@ -317,7 +318,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findDuplicateReferences(): array
@@ -342,7 +343,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->where('wallet_id', $walletId)
             ->completed();
 
-        if ($type) {
+        if ($type instanceof TransactionType) {
             $query->ofType($type->value);
         }
 
@@ -367,12 +368,12 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->limit($limit)
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     public function findByIds(array $transactionIds): array
     {
-        if (empty($transactionIds)) {
+        if ($transactionIds === []) {
             return [];
         }
 
@@ -382,7 +383,7 @@ final class TransactionRepository implements TransactionRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentTransactions->map(fn($transaction) => $this->mapFromEloquent($transaction))->toArray();
+        return $eloquentTransactions->map(fn ($transaction): Transaction => $this->mapFromEloquent($transaction))->toArray();
     }
 
     private function mapFromEloquent(EloquentTransaction $eloquentTransaction): Transaction
@@ -396,22 +397,18 @@ final class TransactionRepository implements TransactionRepositoryInterface
             description: $eloquentTransaction->description,
             metadata: $eloquentTransaction->metadata ?? [],
             relatedTransactionId: $eloquentTransaction->related_transaction_id,
-            orderId: $eloquentTransaction->order_id,
-            id: $eloquentTransaction->id,
-            status: TransactionStatus::from($eloquentTransaction->status),
-            createdAt: $eloquentTransaction->created_at ? Carbon::parse($eloquentTransaction->created_at)->toImmutable() : null,
-            updatedAt: $eloquentTransaction->updated_at ? Carbon::parse($eloquentTransaction->updated_at)->toImmutable() : null
+            orderId: $eloquentTransaction->order_id
         );
     }
 
     private function getCacheKey(int $transactionId): string
     {
-        return self::CACHE_PREFIX . ':' . $transactionId;
+        return self::CACHE_PREFIX.':'.$transactionId;
     }
 
     private function getReferenceCacheKey(string $reference): string
     {
-        return self::CACHE_PREFIX . ':ref:' . $reference;
+        return self::CACHE_PREFIX.':ref:'.$reference;
     }
 
     private function clearCache(Transaction $transaction): void

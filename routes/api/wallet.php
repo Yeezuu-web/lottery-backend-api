@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Wallet\TransactionController;
 use App\Http\Controllers\Wallet\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -18,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Wallet Management Routes
-Route::prefix('wallets')->group(function () {
+Route::prefix('wallets')->group(function (): void {
 
     // Wallet CRUD operations
     Route::get('/{walletId}', [WalletController::class, 'show'])
@@ -73,7 +75,7 @@ Route::prefix('wallets')->group(function () {
 });
 
 // Transaction Management Routes
-Route::prefix('transactions')->group(function () {
+Route::prefix('transactions')->group(function (): void {
 
     // Individual transaction operations
     Route::get('/{transactionId}', [TransactionController::class, 'show'])

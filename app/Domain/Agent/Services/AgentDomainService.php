@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Agent\Services;
 
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
@@ -9,14 +11,9 @@ use App\Domain\Agent\ValueObjects\AgentType;
 use App\Domain\Agent\ValueObjects\Username;
 use App\Shared\Exceptions\ValidationException;
 
-final class AgentDomainService
+final readonly class AgentDomainService
 {
-    private readonly AgentRepositoryInterface $agentRepository;
-
-    public function __construct(AgentRepositoryInterface $agentRepository)
-    {
-        $this->agentRepository = $agentRepository;
-    }
+    public function __construct(private AgentRepositoryInterface $agentRepository) {}
 
     /**
      * Validate if agent can create another agent
@@ -32,13 +29,13 @@ final class AgentDomainService
         $username = new Username($targetUsername);
         if (! $username->isValidForAgentType($targetType)) {
             throw new ValidationException(
-                "Username '{$targetUsername}' is not valid for agent type '{$targetType->value()}'"
+                sprintf("Username '%s' is not valid for agent type '%s'", $targetUsername, $targetType->value())
             );
         }
 
         // Check if username already exists
         if ($this->agentRepository->usernameExists($username)) {
-            throw new ValidationException("Username '{$targetUsername}' already exists");
+            throw new ValidationException(sprintf("Username '%s' already exists", $targetUsername));
         }
 
         // Validate hierarchy relationship
@@ -92,14 +89,14 @@ final class AgentDomainService
         if ($agent->uplineId() !== null) {
             $upline = $this->agentRepository->findById($agent->uplineId());
 
-            if (! $upline) {
-                throw new AgentException("Upline agent with ID '{$agent->uplineId()}' not found");
+            if (! $upline instanceof Agent) {
+                throw new AgentException(sprintf("Upline agent with ID '%d' not found", $agent->uplineId()));
             }
 
             // Check if this agent is a valid child of the upline
             if (! $agent->isDirectChildOf($upline)) {
                 throw new AgentException(
-                    "Agent '{$agent->username()->value()}' is not a valid child of '{$upline->username()->value()}'"
+                    sprintf("Agent '%s' is not a valid child of '%s'", $agent->username()->value(), $upline->username()->value())
                 );
             }
         }

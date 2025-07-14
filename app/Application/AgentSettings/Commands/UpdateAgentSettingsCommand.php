@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Commands;
 
-final class UpdateAgentSettingsCommand
+final readonly class UpdateAgentSettingsCommand
 {
     public function __construct(
-        public readonly int $agentId,
-        public readonly ?array $payoutProfile = null,
-        public readonly ?float $commissionRate = null,
-        public readonly ?float $sharingRate = null,
-        public readonly ?array $bettingLimits = null,
-        public readonly ?array $blockedNumbers = null,
-        public readonly ?bool $autoSettlement = null,
-        public readonly ?bool $isActive = null
+        public int $agentId,
+        public ?array $payoutProfile = null,
+        public ?float $commissionRate = null,
+        public ?float $sharingRate = null,
+        public ?array $bettingLimits = null,
+        public ?array $blockedNumbers = null,
+        public ?bool $autoSettlement = null,
+        public ?bool $isActive = null
     ) {}
 
     public function toArray(): array

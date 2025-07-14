@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Commands;
 
-final class UpdateCommissionRateCommand
+final readonly class UpdateCommissionRateCommand
 {
     public function __construct(
-        public readonly int $agentId,
-        public readonly ?float $commissionRate
+        public int $agentId,
+        public ?float $commissionRate
     ) {}
 
     public function toArray(): array

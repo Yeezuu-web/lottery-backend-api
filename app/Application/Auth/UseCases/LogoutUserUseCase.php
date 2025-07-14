@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\UseCases;
 
 use App\Application\Auth\DTOs\LogoutUserCommand;
@@ -8,19 +10,9 @@ use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
 
-final class LogoutUserUseCase
+final readonly class LogoutUserUseCase
 {
-    private readonly TokenServiceInterface $tokenService;
-
-    private readonly AuthenticationServiceInterface $authInfrastructureService;
-
-    public function __construct(
-        TokenServiceInterface $tokenService,
-        AuthenticationServiceInterface $authInfrastructureService
-    ) {
-        $this->tokenService = $tokenService;
-        $this->authInfrastructureService = $authInfrastructureService;
-    }
+    public function __construct(TokenServiceInterface $tokenService, private AuthenticationServiceInterface $authInfrastructureService) {}
 
     /**
      * Execute logout workflow
@@ -41,7 +33,7 @@ final class LogoutUserUseCase
             $command->audience
         );
 
-        if ($refreshToken) {
+        if ($refreshToken instanceof \App\Domain\Auth\ValueObjects\JWTToken) {
             $this->authInfrastructureService->blacklistToken($refreshToken);
         }
 

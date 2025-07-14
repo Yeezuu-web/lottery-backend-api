@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Order\UseCases;
 
 use App\Application\Order\Commands\AddToCartCommand;
@@ -28,7 +30,7 @@ final readonly class AddToCartUseCase
     {
         // 1. Validate and get agent
         $agent = $this->agentRepository->findById($command->agentId());
-        if (! $agent) {
+        if (! $agent instanceof Agent) {
             throw OrderException::invalidAgent($command->agentId());
         }
 

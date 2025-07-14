@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\AgentSettings\ValueObjects;
 
 use InvalidArgumentException;
+use Stringable;
 
-final class CommissionSharingSettings
+final readonly class CommissionSharingSettings implements Stringable
 {
-    private readonly ?CommissionRate $commissionRate;
+    private ?CommissionRate $commissionRate;
 
-    private readonly ?SharingRate $sharingRate;
+    private ?SharingRate $sharingRate;
 
-    private readonly float $maxCombinedRate;
+    private float $maxCombinedRate;
 
     public function __construct(
         ?CommissionRate $commissionRate = null,
@@ -21,6 +24,30 @@ final class CommissionSharingSettings
         $this->commissionRate = $commissionRate;
         $this->sharingRate = $sharingRate;
         $this->maxCombinedRate = $maxCombinedRate;
+    }
+
+    public function __toString(): string
+    {
+        $parts = [];
+
+        if ($this->hasCommission()) {
+            $parts[] = sprintf('commission: %.2f%%', $this->getCommissionRateValue());
+        }
+
+        if ($this->hasSharing()) {
+            $parts[] = sprintf('sharing: %.2f%%', $this->getSharingRateValue());
+        }
+
+        if (empty($parts)) {
+            $parts[] = 'none';
+        }
+
+        return sprintf(
+            'CommissionSharingSettings(%s, total: %.2f%%, max: %.2f%%)',
+            implode(', ', $parts),
+            $this->getTotalRate(),
+            $this->maxCombinedRate
+        );
     }
 
     public static function commissionOnly(float $commissionRate, float $maxCombinedRate = 50.0): self
@@ -59,7 +86,7 @@ final class CommissionSharingSettings
         $sharing = $sharingRate !== null ? SharingRate::fromPercentage($sharingRate) : null;
 
         // If both are null, create default with zero values
-        if ($commission === null && $sharing === null) {
+        if (! $commission instanceof CommissionRate && ! $sharing instanceof SharingRate) {
             $commission = CommissionRate::zero();
             $sharing = SharingRate::zero();
         }
@@ -106,17 +133,21 @@ final class CommissionSharingSettings
 
     public function hasCommission(): bool
     {
-        return $this->commissionRate !== null && ! $this->commissionRate->isZero();
+        return $this->commissionRate instanceof CommissionRate && ! $this->commissionRate->isZero();
     }
 
     public function hasSharing(): bool
     {
-        return $this->sharingRate !== null && ! $this->sharingRate->isZero();
+        return $this->sharingRate instanceof SharingRate && ! $this->sharingRate->isZero();
     }
 
     public function hasEither(): bool
     {
-        return $this->hasCommission() || $this->hasSharing();
+        if ($this->hasCommission()) {
+            return true;
+        }
+
+        return $this->hasSharing();
     }
 
     public function hasBoth(): bool
@@ -212,14 +243,14 @@ final class CommissionSharingSettings
         ];
     }
 
-    public function equals(CommissionSharingSettings $other): bool
+    public function equals(self $other): bool
     {
-        $commissionEqual = ($this->commissionRate === null && $other->commissionRate === null) ||
-                          ($this->commissionRate !== null && $other->commissionRate !== null &&
+        $commissionEqual = (! $this->commissionRate instanceof CommissionRate && ! $other->commissionRate instanceof CommissionRate) ||
+                          ($this->commissionRate instanceof CommissionRate && $other->commissionRate instanceof CommissionRate &&
                            $this->commissionRate->equals($other->commissionRate));
 
-        $sharingEqual = ($this->sharingRate === null && $other->sharingRate === null) ||
-                       ($this->sharingRate !== null && $other->sharingRate !== null &&
+        $sharingEqual = (! $this->sharingRate instanceof SharingRate && ! $other->sharingRate instanceof SharingRate) ||
+                       ($this->sharingRate instanceof SharingRate && $other->sharingRate instanceof SharingRate &&
                         $this->sharingRate->equals($other->sharingRate));
 
         return $commissionEqual && $sharingEqual && $this->maxCombinedRate === $other->maxCombinedRate;
@@ -249,29 +280,5 @@ final class CommissionSharingSettings
         // - Only sharing (commission = null or 0)
         // - Both commission and sharing
         // - Neither (both = null or 0)
-    }
-
-    public function __toString(): string
-    {
-        $parts = [];
-
-        if ($this->hasCommission()) {
-            $parts[] = sprintf('commission: %.2f%%', $this->getCommissionRateValue());
-        }
-
-        if ($this->hasSharing()) {
-            $parts[] = sprintf('sharing: %.2f%%', $this->getSharingRateValue());
-        }
-
-        if (empty($parts)) {
-            $parts[] = 'none';
-        }
-
-        return sprintf(
-            'CommissionSharingSettings(%s, total: %.2f%%, max: %.2f%%)',
-            implode(', ', $parts),
-            $this->getTotalRate(),
-            $this->maxCombinedRate
-        );
     }
 }

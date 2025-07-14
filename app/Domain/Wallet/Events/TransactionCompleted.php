@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Events;
 
 use App\Domain\Wallet\Models\Transaction;
 use Carbon\Carbon;
 
-final class TransactionCompleted
+final readonly class TransactionCompleted
 {
     public function __construct(
-        public readonly int $transactionId,
-        public readonly int $walletId,
-        public readonly string $type,
-        public readonly array $amount,
-        public readonly string $reference,
-        public readonly array $balanceAfter,
-        public readonly Carbon $occurredAt
+        public int $transactionId,
+        public int $walletId,
+        public string $type,
+        public array $amount,
+        public string $reference,
+        public array $balanceAfter,
+        public Carbon $occurredAt
     ) {}
 
     public static function create(Transaction $transaction): self

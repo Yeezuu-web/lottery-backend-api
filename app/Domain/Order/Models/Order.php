@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\Models;
 
 use App\Domain\Order\ValueObjects\BetData;
@@ -7,34 +9,57 @@ use App\Domain\Order\ValueObjects\GroupId;
 use App\Domain\Order\ValueObjects\OrderNumber;
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Shared\Exceptions\ValidationException;
-use DateTime;
+use DateTimeImmutable;
 
 final class Order
 {
     public function __construct(
-        private ?int $id,
-        private int $agentId,
-        private OrderNumber $orderNumber,
-        private GroupId $groupId,
-        private BetData $betData,
-        private array $expandedNumbers,
-        private array $channelWeights,
-        private Money $totalAmount,
-        private string $status = 'pending',
-        private bool $isPrinted = false,
-        private ?DateTime $printedAt = null,
-        private ?DateTime $placedAt = null,
-        private ?DateTime $createdAt = null,
-        private ?DateTime $updatedAt = null
+        private readonly ?int $id,
+        private readonly int $agentId,
+        private readonly OrderNumber $orderNumber,
+        private readonly GroupId $groupId,
+        private readonly BetData $betData,
+        private readonly array $expandedNumbers,
+        private readonly array $channelWeights,
+        private readonly Money $totalAmount,
+        private readonly string $status = 'pending',
+        private readonly bool $isPrinted = false,
+        private readonly ?DateTimeImmutable $printedAt = null,
+        private ?DateTimeImmutable $placedAt = null,
+        private ?DateTimeImmutable $createdAt = null,
+        private ?DateTimeImmutable $updatedAt = null
     ) {
         $this->validateStatus();
         $this->validateExpandedNumbers();
         $this->validateChannelWeights();
         $this->validateTotalAmount();
 
-        $this->placedAt = $placedAt ?? new DateTime;
-        $this->createdAt = $createdAt ?? new DateTime;
-        $this->updatedAt = $updatedAt ?? new DateTime;
+        $this->placedAt = $placedAt ?? new DateTimeImmutable;
+        $this->createdAt = $createdAt ?? new DateTimeImmutable;
+        $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
+    }
+
+    // Factory methods for creating orders
+    public static function create(
+        int $agentId,
+        OrderNumber $orderNumber,
+        GroupId $groupId,
+        BetData $betData,
+        array $expandedNumbers,
+        array $channelWeights,
+        Money $totalAmount
+    ): self {
+        return new self(
+            null,
+            $agentId,
+            $orderNumber,
+            $groupId,
+            $betData,
+            $expandedNumbers,
+            $channelWeights,
+            $totalAmount,
+            'pending'
+        );
     }
 
     public function id(): ?int
@@ -87,47 +112,24 @@ final class Order
         return $this->isPrinted;
     }
 
-    public function printedAt(): ?DateTime
+    public function printedAt(): ?DateTimeImmutable
     {
         return $this->printedAt;
     }
 
-    public function placedAt(): DateTime
+    public function placedAt(): DateTimeImmutable
     {
         return $this->placedAt;
     }
 
-    public function createdAt(): DateTime
+    public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): DateTime
+    public function updatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
-    }
-
-    // Factory methods for creating orders
-    public static function create(
-        int $agentId,
-        OrderNumber $orderNumber,
-        GroupId $groupId,
-        BetData $betData,
-        array $expandedNumbers,
-        array $channelWeights,
-        Money $totalAmount
-    ): self {
-        return new self(
-            null,
-            $agentId,
-            $orderNumber,
-            $groupId,
-            $betData,
-            $expandedNumbers,
-            $channelWeights,
-            $totalAmount,
-            'pending'
-        );
     }
 
     // Status management methods
@@ -193,10 +195,10 @@ final class Order
             $this->totalAmount,
             $this->status,
             true,
-            new DateTime,
+            new DateTimeImmutable,
             $this->placedAt,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -287,7 +289,7 @@ final class Order
             $this->printedAt,
             $this->placedAt,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -302,12 +304,12 @@ final class Order
 
     private function validateExpandedNumbers(): void
     {
-        if (empty($this->expandedNumbers)) {
+        if ($this->expandedNumbers === []) {
             throw new ValidationException('Order must have at least one expanded number');
         }
 
         foreach ($this->expandedNumbers as $number) {
-            if (! is_string($number) || ! preg_match('/^\d+$/', $number)) {
+            if (! is_string($number) || in_array(preg_match('/^\d+$/', $number), [0, false], true)) {
                 throw new ValidationException('All expanded numbers must be valid digit strings');
             }
         }
@@ -315,7 +317,7 @@ final class Order
 
     private function validateChannelWeights(): void
     {
-        if (empty($this->channelWeights)) {
+        if ($this->channelWeights === []) {
             throw new ValidationException('Order must have channel weights');
         }
 

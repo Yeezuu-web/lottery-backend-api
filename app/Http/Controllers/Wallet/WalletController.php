@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Wallet;
 
 use App\Application\Wallet\Commands\CreateWalletCommand;
@@ -22,7 +24,7 @@ use App\Traits\HttpApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class WalletController extends Controller
+final class WalletController extends Controller
 {
     use HttpApiResponse;
 
@@ -53,8 +55,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -72,7 +74,7 @@ class WalletController extends Controller
         $walletType = $request->get('wallet_type');
         $activeOnly = $request->boolean('active_only', true);
 
-        $query = new GetWalletsByOwnerQuery(
+        new GetWalletsByOwnerQuery(
             ownerId: $ownerId,
             walletType: $walletType ? WalletType::from($walletType) : null,
             activeOnly: $activeOnly
@@ -83,8 +85,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -111,8 +113,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -132,8 +134,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -161,8 +163,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -190,8 +192,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -213,8 +215,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -242,8 +244,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -263,8 +265,8 @@ class WalletController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 

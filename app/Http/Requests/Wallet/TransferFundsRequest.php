@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Wallet;
 
 use App\Domain\Wallet\ValueObjects\Money;
 use Illuminate\Foundation\Http\FormRequest;
 
-class TransferFundsRequest extends FormRequest
+final class TransferFundsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -49,17 +51,9 @@ class TransferFundsRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'currency' => $this->currency ?? 'KHR',
-            'reference' => $this->reference ?? $this->generateReference(),
-        ]);
-    }
-
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function ($validator): void {
             // Additional validation logic
             $amount = $this->input('amount');
             if ($amount && $amount > 50000) {
@@ -104,6 +98,14 @@ class TransferFundsRequest extends FormRequest
     public function getOrderId(): ?int
     {
         return $this->input('order_id');
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'currency' => $this->currency ?? 'KHR',
+            'reference' => $this->reference ?? $this->generateReference(),
+        ]);
     }
 
     private function generateReference(): string

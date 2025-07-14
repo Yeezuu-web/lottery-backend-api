@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Application\Auth\DTOs\AuthenticateUserCommand;
@@ -16,37 +18,16 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RefreshTokenRequest;
 use App\Infrastructure\Auth\Services\AuthenticationService;
 use App\Traits\HttpApiResponse;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 
-class UplineAuthController extends Controller
+final class UplineAuthController extends Controller
 {
     use HttpApiResponse;
 
-    private readonly AuthenticateUserUseCase $authenticateUserUseCase;
-
-    private readonly RefreshTokenUseCase $refreshTokenUseCase;
-
-    private readonly LogoutUserUseCase $logoutUserUseCase;
-
-    private readonly GetUserProfileUseCase $getUserProfileUseCase;
-
-    private readonly AuthenticationService $authService;
-
-    public function __construct(
-        AuthenticateUserUseCase $authenticateUserUseCase,
-        RefreshTokenUseCase $refreshTokenUseCase,
-        LogoutUserUseCase $logoutUserUseCase,
-        GetUserProfileUseCase $getUserProfileUseCase,
-        AuthenticationService $authService
-    ) {
-        $this->authenticateUserUseCase = $authenticateUserUseCase;
-        $this->refreshTokenUseCase = $refreshTokenUseCase;
-        $this->logoutUserUseCase = $logoutUserUseCase;
-        $this->getUserProfileUseCase = $getUserProfileUseCase;
-        $this->authService = $authService;
-    }
+    public function __construct(private readonly AuthenticateUserUseCase $authenticateUserUseCase, private readonly RefreshTokenUseCase $refreshTokenUseCase, private readonly LogoutUserUseCase $logoutUserUseCase, private readonly GetUserProfileUseCase $getUserProfileUseCase, private readonly AuthenticationService $authService) {}
 
     /**
      * Authenticate upline user
@@ -96,7 +77,7 @@ class UplineAuthController extends Controller
 
         } catch (AuthenticationException $e) {
             return $this->error($e->getMessage(), 401);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             logger()->error('Authentication failed: '.$e->getMessage());
 
             return $this->error('Authentication failed', 500);
@@ -152,7 +133,7 @@ class UplineAuthController extends Controller
 
         } catch (AuthenticationException $e) {
             return $this->error($e->getMessage(), 401);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             logger()->error('Token refresh failed: '.$e->getMessage());
 
             return $this->error('Token refresh failed', 500);
@@ -183,7 +164,7 @@ class UplineAuthController extends Controller
 
         } catch (AuthenticationException $e) {
             return $this->error($e->getMessage(), 401);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             logger()->error('Logout failed: '.$e->getMessage());
 
             return $this->error('Logout failed', 500);
@@ -218,7 +199,7 @@ class UplineAuthController extends Controller
 
         } catch (AuthenticationException $e) {
             return $this->error($e->getMessage(), 401);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             logger()->error('Profile retrieval failed: '.$e->getMessage());
 
             return $this->error('Profile retrieval failed', 500);

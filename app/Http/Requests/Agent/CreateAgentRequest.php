@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Agent;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CreateAgentRequest extends FormRequest
+final class CreateAgentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -31,7 +33,7 @@ class CreateAgentRequest extends FormRequest
                 'string',
                 'regex:/^[A-Z0-9]+$/',
                 'unique:agents,username',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail): void {
                     // Custom validation for username length based on agent type
                     $agentType = $this->input('agent_type');
                     if (! $agentType) {
@@ -42,13 +44,13 @@ class CreateAgentRequest extends FormRequest
 
                     $expectedLength = $this->getExpectedUsernameLength($agentType);
 
-                    if (strlen($value) !== $expectedLength) {
-                        $fail("Username must be exactly {$expectedLength} characters for {$agentType} type.");
+                    if (mb_strlen($value) !== $expectedLength) {
+                        $fail(sprintf('Username must be exactly %d characters for %s type.', $expectedLength, $agentType));
                     }
 
                     // Additional pattern validation
                     if (! $this->isValidUsernamePattern($value, $agentType)) {
-                        $fail("Username pattern is invalid for {$agentType} type.");
+                        $fail(sprintf('Username pattern is invalid for %s type.', $agentType));
                     }
                 },
             ],
@@ -72,7 +74,7 @@ class CreateAgentRequest extends FormRequest
                 'nullable',
                 'integer',
                 'exists:agents,id',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail): void {
                     $agentType = $this->input('agent_type');
 
                     // Company agents should not have upline
@@ -81,7 +83,7 @@ class CreateAgentRequest extends FormRequest
                     }
 
                     // Non-company agents should have upline (unless provided via creator_id)
-                    if ($agentType !== 'company' && $value === null && ! $this->getCreatorId()) {
+                    if ($agentType !== 'company' && $value === null && $this->getCreatorId() === 0) {
                         $fail('Non-company agents must have upline.');
                     }
                 },
@@ -198,7 +200,7 @@ class CreateAgentRequest extends FormRequest
             'senior' => preg_match('/^[A-Z]{4}$/', $username),
             'master' => preg_match('/^[A-Z]{6}$/', $username),
             'agent' => preg_match('/^[A-Z]{8}$/', $username),
-            'member' => preg_match('/^[A-Z]{8}[0-9]{3}$/', $username),
+            'member' => preg_match('/^[A-Z]{8}\d{3}$/', $username),
             default => false
         };
     }

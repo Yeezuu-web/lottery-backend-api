@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Order\Contracts;
 
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\ValueObjects\GroupId;
 use App\Domain\Order\ValueObjects\OrderNumber;
+use DateTime;
+use DateTimeImmutable;
 
 interface OrderRepositoryInterface
 {
@@ -73,13 +77,13 @@ interface OrderRepositoryInterface
     /**
      * Get orders by date range
      *
-     * @param  \DateTime  $startDate  Start date
-     * @param  \DateTime  $endDate  End date
+     * @param  DateTime  $startDate  Start date
+     * @param  DateTime  $endDate  End date
      * @param  int  $limit  Number of orders to return
      * @param  int  $offset  Offset for pagination
      * @return array Array of orders
      */
-    public function findByDateRange(\DateTime $startDate, \DateTime $endDate, int $limit = 10, int $offset = 0): array;
+    public function findByDateRange(DateTimeImmutable $startDate, DateTimeImmutable $endDate, int $limit = 10, int $offset = 0): array;
 
     /**
      * Count orders for an agent

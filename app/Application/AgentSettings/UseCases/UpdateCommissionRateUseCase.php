@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\UseCases;
 
 use App\Application\AgentSettings\Commands\UpdateCommissionRateCommand;
@@ -7,11 +9,12 @@ use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
 use App\Application\AgentSettings\Responses\AgentSettingsOperationResponse;
 use App\Application\AgentSettings\Responses\AgentSettingsResponse;
 use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
+use Exception;
 
-final class UpdateCommissionRateUseCase
+final readonly class UpdateCommissionRateUseCase
 {
     public function __construct(
-        private readonly AgentSettingsRepositoryInterface $repository
+        private AgentSettingsRepositoryInterface $repository
     ) {}
 
     public function execute(UpdateCommissionRateCommand $command): AgentSettingsOperationResponse
@@ -20,7 +23,7 @@ final class UpdateCommissionRateUseCase
             // Get existing agent settings
             $agentSettings = $this->repository->findByAgentId($command->agentId);
 
-            if ($agentSettings === null) {
+            if (! $agentSettings instanceof \App\Domain\AgentSettings\Models\AgentSettings) {
                 throw AgentSettingsException::notFound($command->agentId);
             }
 
@@ -40,7 +43,7 @@ final class UpdateCommissionRateUseCase
                 message: $e->getMessage(),
                 errors: ['commission_rate' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return AgentSettingsOperationResponse::failure(
                 message: 'Failed to update commission rate',
                 errors: ['system' => $e->getMessage()]

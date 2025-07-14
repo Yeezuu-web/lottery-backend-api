@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Order\Queries\Handlers;
 
 use App\Application\Order\Contracts\CartRepositoryInterface;
@@ -18,7 +20,7 @@ final readonly class GetCartQueryHandler
     {
         // 1. Validate and get agent
         $agent = $this->agentRepository->findById($query->agentId());
-        if (! $agent) {
+        if (! $agent instanceof \App\Domain\Agent\Models\Agent) {
             throw OrderException::invalidAgent($query->agentId());
         }
 

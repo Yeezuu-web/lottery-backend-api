@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\UseCases;
 
 use App\Application\Auth\DTOs\AuthenticateUserResponse;
@@ -10,27 +12,9 @@ use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
 
-final class RefreshTokenUseCase
+final readonly class RefreshTokenUseCase
 {
-    private readonly AgentRepositoryInterface $agentRepository;
-
-    private readonly TokenServiceInterface $tokenService;
-
-    private readonly AuthenticationDomainServiceInterface $authDomainService;
-
-    private readonly AuthenticationServiceInterface $authInfrastructureService;
-
-    public function __construct(
-        AgentRepositoryInterface $agentRepository,
-        TokenServiceInterface $tokenService,
-        AuthenticationDomainServiceInterface $authDomainService,
-        AuthenticationServiceInterface $authInfrastructureService
-    ) {
-        $this->agentRepository = $agentRepository;
-        $this->tokenService = $tokenService;
-        $this->authDomainService = $authDomainService;
-        $this->authInfrastructureService = $authInfrastructureService;
-    }
+    public function __construct(private AgentRepositoryInterface $agentRepository, private TokenServiceInterface $tokenService, private AuthenticationDomainServiceInterface $authDomainService, private AuthenticationServiceInterface $authInfrastructureService) {}
 
     /**
      * Execute token refresh workflow
@@ -39,7 +23,7 @@ final class RefreshTokenUseCase
     {
         // 1. Decode and validate refresh token (infrastructure operation)
         $refreshToken = $this->tokenService->decodeToken($command->refreshToken, $command->audience);
-        if (! $refreshToken) {
+        if (! $refreshToken instanceof \App\Domain\Auth\ValueObjects\JWTToken) {
             throw AuthenticationException::invalidRefreshToken();
         }
 
@@ -55,7 +39,7 @@ final class RefreshTokenUseCase
 
         // 4. Find agent by ID from token (infrastructure operation)
         $agent = $this->agentRepository->findById($refreshToken->getAgentId());
-        if (! $agent) {
+        if (! $agent instanceof \App\Domain\Agent\Models\Agent) {
             throw AuthenticationException::invalidRefreshToken();
         }
 

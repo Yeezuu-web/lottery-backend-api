@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Wallet;
 
 use App\Domain\Wallet\ValueObjects\WalletType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CreateWalletRequest extends FormRequest
+final class CreateWalletRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -41,14 +43,6 @@ class CreateWalletRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'currency' => $this->currency ?? 'USD',
-            'is_active' => $this->is_active ?? true,
-        ]);
-    }
-
     public function getOwnerId(): int
     {
         return $this->input('owner_id');
@@ -67,5 +61,13 @@ class CreateWalletRequest extends FormRequest
     public function getIsActive(): bool
     {
         return $this->boolean('is_active', true);
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'currency' => $this->currency ?? 'USD',
+            'is_active' => $this->is_active ?? true,
+        ]);
     }
 }

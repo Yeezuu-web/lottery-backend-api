@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Order\Services;
 
 use App\Application\Order\Contracts\WalletServiceInterface;
@@ -7,18 +9,20 @@ use App\Application\Wallet\Contracts\WalletRepositoryInterface;
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Domain\Wallet\ValueObjects\WalletType;
+use Exception;
+use Log;
 
-final class OrderWalletService implements WalletServiceInterface
+final readonly class OrderWalletService implements WalletServiceInterface
 {
     public function __construct(
-        private readonly WalletRepositoryInterface $walletRepository
+        private WalletRepositoryInterface $walletRepository
     ) {}
 
     public function hasEnoughBalance(Agent $agent, Money $amount): bool
     {
         $wallet = $this->walletRepository->findByOwnerIdAndType($agent->id(), WalletType::MAIN);
 
-        if (!$wallet) {
+        if (! $wallet instanceof \App\Domain\Wallet\Models\Wallet) {
             return false;
         }
 
@@ -30,7 +34,7 @@ final class OrderWalletService implements WalletServiceInterface
         // Use locking to prevent race conditions during wallet operations
         $wallet = $this->walletRepository->findByOwnerIdAndTypeWithLock($agent->id(), WalletType::MAIN);
 
-        if (!$wallet) {
+        if (! $wallet) {
             return false;
         }
 
@@ -46,14 +50,14 @@ final class OrderWalletService implements WalletServiceInterface
             $this->walletRepository->saveWithLock($updatedWallet);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             // Log the error and return false
-            \Log::error('Failed to deduct balance from wallet', [
+            Log::error('Failed to deduct balance from wallet', [
                 'agent_id' => $agent->id(),
                 'wallet_id' => $wallet->getId(),
                 'amount' => $amount->amount(),
                 'description' => $description,
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ]);
 
             return false;
@@ -65,7 +69,7 @@ final class OrderWalletService implements WalletServiceInterface
         // Use locking to prevent race conditions during wallet operations
         $wallet = $this->walletRepository->findByOwnerIdAndTypeWithLock($agent->id(), WalletType::MAIN);
 
-        if (!$wallet) {
+        if (! $wallet) {
             return false;
         }
 
@@ -77,14 +81,14 @@ final class OrderWalletService implements WalletServiceInterface
             $this->walletRepository->saveWithLock($updatedWallet);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             // Log the error and return false
-            \Log::error('Failed to add balance to wallet', [
+            Log::error('Failed to add balance to wallet', [
                 'agent_id' => $agent->id(),
                 'wallet_id' => $wallet->getId(),
                 'amount' => $amount->amount(),
                 'description' => $description,
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ]);
 
             return false;
@@ -95,7 +99,7 @@ final class OrderWalletService implements WalletServiceInterface
     {
         $wallet = $this->walletRepository->findByOwnerIdAndType($agent->id(), WalletType::MAIN);
 
-        if (!$wallet) {
+        if (! $wallet instanceof \App\Domain\Wallet\Models\Wallet) {
             return Money::zero($agent->getPreferredCurrency());
         }
 

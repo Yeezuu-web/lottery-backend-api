@@ -1,18 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Helpers;
 
 use App\Application\Auth\DTOs\AuthenticateUserCommand;
 use App\Application\Auth\DTOs\LogoutUserCommand;
 use App\Application\Auth\DTOs\RefreshTokenCommand;
+use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Agent\ValueObjects\AgentType;
 use App\Domain\Agent\ValueObjects\Username;
+use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
+use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\ValueObjects\JWTToken;
 use App\Domain\Auth\ValueObjects\TokenPair;
+use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
 use Carbon\Carbon;
+use DateTimeImmutable;
+use Mockery;
+use Mockery\MockInterface;
 
-class AuthTestHelper
+final class AuthTestHelper
 {
     /**
      * Create a test agent
@@ -48,9 +57,9 @@ class AuthTestHelper
         string $token = 'test-jwt-token',
         int $agentId = 123,
         string $audience = 'upline',
-        ?Carbon $expiresAt = null
+        ?DateTimeImmutable $expiresAt = null
     ): JWTToken {
-        $expiresAt = $expiresAt ?? Carbon::now()->addHour();
+        $expiresAt ??= (new DateTimeImmutable())->modify('+1 hour');
 
         $payload = [
             'iss' => 'lottery-api',
@@ -61,10 +70,10 @@ class AuthTestHelper
             'agent_type' => 'company',
             'permissions' => ['read', 'write'],
             'iat' => Carbon::now()->timestamp,
-            'exp' => $expiresAt->timestamp,
+            'exp' => $expiresAt,
         ];
 
-        return new JWTToken($token, $payload, $expiresAt->toDateTime());
+        return new JWTToken($token, $payload, $expiresAt);
     }
 
     /**
@@ -75,7 +84,7 @@ class AuthTestHelper
         int $agentId = 123,
         string $audience = 'upline'
     ): JWTToken {
-        return self::createTestJWTToken($token, $agentId, $audience, Carbon::now()->subHour());
+        return self::createTestJWTToken($token, $agentId, $audience, Carbon::now()->subHour()->toDateTimeImmutable());
     }
 
     /**
@@ -88,7 +97,7 @@ class AuthTestHelper
         string $audience = 'upline'
     ): TokenPair {
         $accessTokenObj = self::createTestJWTToken($accessToken, $agentId, $audience);
-        $refreshTokenObj = self::createTestJWTToken($refreshToken, $agentId, $audience, Carbon::now()->addWeek());
+        $refreshTokenObj = self::createTestJWTToken($refreshToken, $agentId, $audience, Carbon::now()->addWeek()->toDateTimeImmutable());
 
         return new TokenPair($accessTokenObj, $refreshTokenObj);
     }
@@ -121,7 +130,7 @@ class AuthTestHelper
         ?JWTToken $token = null,
         string $audience = 'upline'
     ): LogoutUserCommand {
-        $token = $token ?? self::createTestJWTToken('test-token', 123, $audience);
+        $token ??= self::createTestJWTToken('test-token', 123, $audience);
 
         return new LogoutUserCommand($token, $audience);
     }
@@ -129,32 +138,32 @@ class AuthTestHelper
     /**
      * Create mock agent repository
      */
-    public static function createMockAgentRepository(): \PHPUnit\Framework\MockObject\MockObject
+    public static function createMockAgentRepository(): MockInterface
     {
-        return \Mockery::mock(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class);
+        return Mockery::mock(AgentRepositoryInterface::class);
     }
 
     /**
      * Create mock token service
      */
-    public static function createMockTokenService(): \PHPUnit\Framework\MockObject\MockObject
+    public static function createMockTokenService(): MockInterface
     {
-        return \Mockery::mock(\App\Domain\Auth\Contracts\TokenServiceInterface::class);
+        return Mockery::mock(TokenServiceInterface::class);
     }
 
     /**
      * Create mock authentication domain service
      */
-    public static function createMockAuthDomainService(): \PHPUnit\Framework\MockObject\MockObject
+    public static function createMockAuthDomainService(): MockInterface
     {
-        return \Mockery::mock(\App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface::class);
+        return Mockery::mock(AuthenticationDomainServiceInterface::class);
     }
 
     /**
      * Create mock authentication infrastructure service
      */
-    public static function createMockAuthInfrastructureService(): \PHPUnit\Framework\MockObject\MockObject
+    public static function createMockAuthInfrastructureService(): MockInterface
     {
-        return \Mockery::mock(\App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface::class);
+        return Mockery::mock(AuthenticationServiceInterface::class);
     }
 }

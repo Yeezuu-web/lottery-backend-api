@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Wallet\Models;
 
 use App\Infrastructure\Order\Models\EloquentOrder;
@@ -7,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class EloquentTransaction extends Model
+final class EloquentTransaction extends Model
 {
     use HasFactory;
 
@@ -47,7 +49,7 @@ class EloquentTransaction extends Model
      */
     public function relatedTransaction(): BelongsTo
     {
-        return $this->belongsTo(EloquentTransaction::class, 'related_transaction_id');
+        return $this->belongsTo(self::class, 'related_transaction_id');
     }
 
     /**
@@ -110,7 +112,7 @@ class EloquentTransaction extends Model
             'bet_refund',
             'commission_earned',
             'bonus_added',
-            'deposit'
+            'deposit',
         ]);
     }
 
@@ -126,7 +128,7 @@ class EloquentTransaction extends Model
             'commission_shared',
             'bonus_used',
             'withdrawal',
-            'fee'
+            'fee',
         ]);
     }
 
@@ -174,7 +176,7 @@ class EloquentTransaction extends Model
             'bet_refund',
             'commission_earned',
             'bonus_added',
-            'deposit'
+            'deposit',
         ]);
     }
 
@@ -190,7 +192,7 @@ class EloquentTransaction extends Model
             'commission_shared',
             'bonus_used',
             'withdrawal',
-            'fee'
+            'fee',
         ]);
     }
 
@@ -224,7 +226,8 @@ class EloquentTransaction extends Model
     public function getFormattedAmountAttribute(): string
     {
         $currency = $this->wallet->currency ?? 'USD';
-        return number_format($this->amount, 2) . ' ' . $currency;
+
+        return number_format($this->amount, 2).' '.$currency;
     }
 
     /**

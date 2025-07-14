@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Agent\UseCases;
 
 use App\Application\Agent\Commands\CreateAgentCommand;
@@ -10,18 +12,18 @@ use App\Domain\Agent\Models\Agent;
 use App\Domain\Agent\Services\AgentDomainService;
 use App\Domain\Agent\ValueObjects\AgentType;
 
-final class CreateAgentUseCase
+final readonly class CreateAgentUseCase
 {
     public function __construct(
-        private readonly AgentRepositoryInterface $agentRepository,
-        private readonly AgentDomainService $agentDomainService
+        private AgentRepositoryInterface $agentRepository,
+        private AgentDomainService $agentDomainService
     ) {}
 
     public function execute(CreateAgentCommand $command): AgentResponse
     {
         // Find the creator agent
         $creator = $this->agentRepository->findById($command->getCreatorId());
-        if (! $creator) {
+        if (! $creator instanceof Agent) {
             throw AgentException::notFound($command->getCreatorId());
         }
 
@@ -86,7 +88,7 @@ final class CreateAgentUseCase
         // If upline is provided, validate it
         if ($providedUplineId !== null) {
             $upline = $this->agentRepository->findById($providedUplineId);
-            if (! $upline) {
+            if (! $upline instanceof Agent) {
                 throw AgentException::uplineNotFound($providedUplineId);
             }
 

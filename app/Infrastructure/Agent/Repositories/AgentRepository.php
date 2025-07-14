@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Agent\Repositories;
 
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
@@ -9,10 +11,10 @@ use App\Domain\Agent\ValueObjects\Username;
 use App\Infrastructure\Agent\Models\EloquentAgent;
 use Illuminate\Support\Facades\Hash;
 
-final class AgentRepository implements AgentRepositoryInterface
+final readonly class AgentRepository implements AgentRepositoryInterface
 {
     public function __construct(
-        private readonly EloquentAgent $model
+        private EloquentAgent $model
     ) {}
 
     public function findById(int $id): ?Agent
@@ -53,14 +55,14 @@ final class AgentRepository implements AgentRepositoryInterface
             ->orderBy('username')
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function getHierarchyDownlines(int $agentId): array
     {
         // Get the agent's username to find all downlines
         $agent = $this->findById($agentId);
-        if (!$agent) {
+        if (! $agent instanceof Agent) {
             return [];
         }
 
@@ -68,13 +70,13 @@ final class AgentRepository implements AgentRepositoryInterface
 
         $eloquentAgents = $this->model
             ->with(['parent', 'settings', 'wallets'])
-            ->where('username', 'LIKE', $usernamePrefix . '%')
+            ->where('username', 'LIKE', $usernamePrefix.'%')
             ->where('id', '!=', $agentId)
             ->active()
             ->orderBy('username')
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function getByUplineId(int $uplineId): array
@@ -86,7 +88,7 @@ final class AgentRepository implements AgentRepositoryInterface
             ->orderBy('username')
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function getByAgentType(AgentType $agentType): array
@@ -98,7 +100,7 @@ final class AgentRepository implements AgentRepositoryInterface
             ->orderBy('username')
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function usernameExists(Username $username): bool
@@ -114,20 +116,20 @@ final class AgentRepository implements AgentRepositoryInterface
     public function getNextAvailableUsername(AgentType $agentType, ?Username $parentUsername = null): Username
     {
         $usernameLength = $this->getUsernameLength($agentType);
-        $prefix = $parentUsername ? $parentUsername->value() : '';
+        $prefix = $parentUsername instanceof Username ? $parentUsername->value() : '';
 
         // For members, use parent username + sequence
         if ($agentType->value() === 'member') {
             $existingUsernames = $this->model
-                ->where('username', 'LIKE', $prefix . '%')
+                ->where('username', 'LIKE', $prefix.'%')
                 ->where('agent_type', 'member')
                 ->pluck('username')
                 ->toArray();
 
             $nextSequence = 1;
             do {
-                $newUsername = $prefix . str_pad($nextSequence, $usernameLength - strlen($prefix), '0', STR_PAD_LEFT);
-                $nextSequence++;
+                $newUsername = $prefix.mb_str_pad($nextSequence, $usernameLength - mb_strlen($prefix), '0', STR_PAD_LEFT);
+                ++$nextSequence;
             } while (in_array($newUsername, $existingUsernames));
 
             return Username::fromString($newUsername);
@@ -135,15 +137,15 @@ final class AgentRepository implements AgentRepositoryInterface
 
         // For other agent types, use alphabetical sequence
         $existingUsernames = $this->model
-            ->where('username', 'LIKE', $prefix . str_repeat('_', $usernameLength - strlen($prefix)))
+            ->where('username', 'LIKE', $prefix.str_repeat('_', $usernameLength - mb_strlen($prefix)))
             ->where('agent_type', $agentType->value())
             ->pluck('username')
             ->toArray();
 
         $sequence = 'A';
         do {
-            $newUsername = $prefix . str_pad($sequence, $usernameLength - strlen($prefix), 'A', STR_PAD_LEFT);
-            $sequence++;
+            $newUsername = $prefix.mb_str_pad($sequence, $usernameLength - mb_strlen($prefix), 'A', STR_PAD_LEFT);
+            ++$sequence;
         } while (in_array($newUsername, $existingUsernames));
 
         return Username::fromString($newUsername);
@@ -152,7 +154,7 @@ final class AgentRepository implements AgentRepositoryInterface
     public function getManagedAgents(int $agentId): array
     {
         $agent = $this->findById($agentId);
-        if (!$agent) {
+        if (! $agent instanceof Agent) {
             return [];
         }
 
@@ -165,7 +167,7 @@ final class AgentRepository implements AgentRepositoryInterface
                 ->orderBy('username')
                 ->get();
 
-            return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+            return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
         }
 
         // Other agents can only manage their downlines
@@ -176,8 +178,8 @@ final class AgentRepository implements AgentRepositoryInterface
     {
         $eloquentAgent = $this->model->find($agent->id());
 
-        if (!$eloquentAgent) {
-            $eloquentAgent = new EloquentAgent();
+        if (! $eloquentAgent) {
+            $eloquentAgent = new EloquentAgent;
         }
 
         $eloquentAgent->fill([
@@ -220,7 +222,7 @@ final class AgentRepository implements AgentRepositoryInterface
             ->active();
 
         if (isset($criteria['username_pattern'])) {
-            $query->where('username', 'LIKE', $criteria['username_pattern'] . '%');
+            $query->where('username', 'LIKE', $criteria['username_pattern'].'%');
         }
 
         if (isset($criteria['agent_type'])) {
@@ -232,16 +234,16 @@ final class AgentRepository implements AgentRepositoryInterface
         }
 
         if (isset($criteria['email'])) {
-            $query->where('email', 'LIKE', '%' . $criteria['email'] . '%');
+            $query->where('email', 'LIKE', '%'.$criteria['email'].'%');
         }
 
         if (isset($criteria['name'])) {
-            $query->where('name', 'LIKE', '%' . $criteria['name'] . '%');
+            $query->where('name', 'LIKE', '%'.$criteria['name'].'%');
         }
 
         $eloquentAgents = $query->orderBy('username')->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function paginate(int $page, int $perPage, array $criteria = []): array
@@ -252,7 +254,7 @@ final class AgentRepository implements AgentRepositoryInterface
 
         // Apply criteria filters
         if (isset($criteria['username_pattern'])) {
-            $query->where('username', 'LIKE', $criteria['username_pattern'] . '%');
+            $query->where('username', 'LIKE', $criteria['username_pattern'].'%');
         }
 
         if (isset($criteria['agent_type'])) {
@@ -264,11 +266,11 @@ final class AgentRepository implements AgentRepositoryInterface
         }
 
         if (isset($criteria['email'])) {
-            $query->where('email', 'LIKE', '%' . $criteria['email'] . '%');
+            $query->where('email', 'LIKE', '%'.$criteria['email'].'%');
         }
 
         if (isset($criteria['name'])) {
-            $query->where('name', 'LIKE', '%' . $criteria['name'] . '%');
+            $query->where('name', 'LIKE', '%'.$criteria['name'].'%');
         }
 
         $eloquentAgents = $query
@@ -277,40 +279,43 @@ final class AgentRepository implements AgentRepositoryInterface
             ->limit($perPage)
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function verifyPassword(Agent $agent, string $password): bool
     {
         $eloquentAgent = $this->model->find($agent->id());
+
         return $eloquentAgent && Hash::check($password, $eloquentAgent->password);
     }
 
     public function updatePassword(Agent $agent, string $newPassword): bool
     {
         $eloquentAgent = $this->model->find($agent->id());
-        if (!$eloquentAgent) {
+        if (! $eloquentAgent) {
             return false;
         }
 
         $eloquentAgent->password = Hash::make($newPassword);
+
         return $eloquentAgent->save();
     }
 
     public function updateStatus(Agent $agent, bool $isActive): bool
     {
         $eloquentAgent = $this->model->find($agent->id());
-        if (!$eloquentAgent) {
+        if (! $eloquentAgent) {
             return false;
         }
 
         $eloquentAgent->status = $isActive ? 'active' : 'inactive';
+
         return $eloquentAgent->save();
     }
 
     public function getAgentsByIds(array $agentIds): array
     {
-        if (empty($agentIds)) {
+        if ($agentIds === []) {
             return [];
         }
 
@@ -319,7 +324,7 @@ final class AgentRepository implements AgentRepositoryInterface
             ->whereIn('id', $agentIds)
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function getAgentsWithSettings(): array
@@ -331,7 +336,7 @@ final class AgentRepository implements AgentRepositoryInterface
             ->orderBy('username')
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     public function getAgentsWithWallets(): array
@@ -343,7 +348,7 @@ final class AgentRepository implements AgentRepositoryInterface
             ->orderBy('username')
             ->get();
 
-        return $eloquentAgents->map(fn($agent) => $this->mapToAgent($agent))->toArray();
+        return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
     /**

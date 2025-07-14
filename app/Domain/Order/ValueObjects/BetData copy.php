@@ -1,50 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\ValueObjects;
 
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Shared\Exceptions\ValidationException;
 
-final class BetData
+final readonly class BetData
 {
-    private readonly string $number;
-
-    private readonly array $channels;
-
-    private readonly array $provinces;
-
-    private readonly string $type;
-
-    private readonly string $period;
-
-    private readonly string $option;
-
-    private readonly Money $amount;
+    private array $provinces;
 
     public function __construct(
-        string $number,
-        array $channels,
+        private string $number,
+        private array $channels,
         array $provinces,
-        string $type,
-        string $period,
-        string $option,
-        Money $amount
+        private string $type,
+        private string $period,
+        private string $option,
+        private Money $amount
     ) {
-        $this->validateNumber($number);
-        $this->validateChannels($channels);
+        $this->validateNumber();
+        $this->validateChannels();
         $this->validateProvinces($provinces);
-        $this->validateType($type);
-        $this->validatePeriod($period);
-        $this->validateOption($option);
-        $this->validateAmount($amount);
-
-        $this->number = $number;
-        $this->channels = $channels;
+        $this->validateType();
+        $this->validatePeriod();
+        $this->validateOption();
+        $this->validateAmount();
         $this->provinces = $provinces;
-        $this->type = $type;
-        $this->period = $period;
-        $this->option = $option;
-        $this->amount = $amount;
     }
 
     public function number(): string
@@ -118,15 +101,15 @@ final class BetData
 
     private function validateNumber(string $number): void
     {
-        if (empty($number)) {
+        if ($number === '' || $number === '0') {
             throw new ValidationException('Bet number cannot be empty');
         }
 
-        if (! preg_match('/^\d+$/', $number)) {
+        if (in_array(preg_match('/^\d+$/', $number), [0, false], true)) {
             throw new ValidationException('Bet number must contain only digits');
         }
 
-        $length = strlen($number);
+        $length = mb_strlen($number);
         if ($length < 2 || $length > 4) {
             throw new ValidationException('Bet number must be between 2 and 4 digits');
         }
@@ -134,7 +117,7 @@ final class BetData
 
     private function validateChannels(array $channels): void
     {
-        if (empty($channels)) {
+        if ($channels === []) {
             throw new ValidationException('At least one channel must be selected');
         }
 
@@ -148,7 +131,7 @@ final class BetData
 
     private function validateProvinces(array $provinces): void
     {
-        if (empty($provinces)) {
+        if ($provinces === []) {
             throw new ValidationException('At least one province must be selected');
         }
 
@@ -176,7 +159,7 @@ final class BetData
 
     private function validateOption(string $option): void
     {
-        if (empty($option)) {
+        if ($option === '' || $option === '0') {
             throw new ValidationException('Option cannot be empty');
         }
 

@@ -1,20 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\DTOs;
 
 use App\Domain\Auth\ValueObjects\JWTToken;
 
-final class LogoutUserCommand
+final readonly class LogoutUserCommand
 {
-    public readonly JWTToken $token;
-
-    public readonly string $audience;
-
-    public function __construct(JWTToken $token, string $audience)
-    {
-        $this->token = $token;
-        $this->audience = $audience;
-    }
+    public function __construct(public JWTToken $token, public string $audience) {}
 
     public function toArray(): array
     {

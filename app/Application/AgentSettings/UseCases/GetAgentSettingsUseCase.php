@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\UseCases;
 
 use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
@@ -7,11 +9,12 @@ use App\Application\AgentSettings\Queries\GetAgentSettingsQuery;
 use App\Application\AgentSettings\Responses\AgentSettingsOperationResponse;
 use App\Application\AgentSettings\Responses\AgentSettingsResponse;
 use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
+use Exception;
 
-final class GetAgentSettingsUseCase
+final readonly class GetAgentSettingsUseCase
 {
     public function __construct(
-        private readonly AgentSettingsRepositoryInterface $repository
+        private AgentSettingsRepositoryInterface $repository
     ) {}
 
     public function execute(GetAgentSettingsQuery $query): AgentSettingsOperationResponse
@@ -25,7 +28,7 @@ final class GetAgentSettingsUseCase
             }
 
             // Check if agent settings exist
-            if ($agentSettings === null) {
+            if (! $agentSettings instanceof \App\Domain\AgentSettings\Models\AgentSettings) {
                 throw AgentSettingsException::notFound($query->agentId);
             }
 
@@ -44,7 +47,7 @@ final class GetAgentSettingsUseCase
                 message: $e->getMessage(),
                 errors: ['agent_settings' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return AgentSettingsOperationResponse::failure(
                 message: 'Failed to retrieve agent settings',
                 errors: ['system' => $e->getMessage()]

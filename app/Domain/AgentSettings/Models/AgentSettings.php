@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\AgentSettings\Models;
 
 use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
@@ -7,80 +9,32 @@ use App\Domain\AgentSettings\ValueObjects\CommissionSharingSettings;
 use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
 use Carbon\Carbon;
 
-final class AgentSettings
+final readonly class AgentSettings
 {
-    private readonly int $agentId;
-
-    private ?PayoutProfile $payoutProfile;
-
-    private ?int $payoutProfileSourceAgentId;
-
-    private readonly bool $hasCustomPayoutProfile;
-
-    private readonly CommissionSharingSettings $commissionSharingSettings;
-
-    // Computed/Cached values for performance
-    private readonly PayoutProfile $effectivePayoutProfile;
-
-    private readonly int $effectivePayoutSourceAgentId;
-
-    private readonly CommissionSharingSettings $effectiveCommissionSharingSettings;
-
-    // Cache management
-    private readonly bool $isComputed;
-
-    private readonly ?Carbon $computedAt;
-
-    private readonly ?Carbon $cacheExpiresAt;
-
-    // Additional settings
-    private readonly array $bettingLimits;
-
-    private readonly array $blockedNumbers;
-
-    private readonly bool $autoSettlement;
-
-    private readonly bool $isActive;
-
     // Add creation and update timestamps
-    private readonly Carbon $createdAt;
+    private Carbon $createdAt;
 
-    private readonly Carbon $updatedAt;
+    private Carbon $updatedAt;
 
     public function __construct(
-        int $agentId,
-        ?PayoutProfile $payoutProfile,
-        ?int $payoutProfileSourceAgentId,
-        bool $hasCustomPayoutProfile,
-        CommissionSharingSettings $commissionSharingSettings,
-        PayoutProfile $effectivePayoutProfile,
-        int $effectivePayoutSourceAgentId,
-        CommissionSharingSettings $effectiveCommissionSharingSettings,
-        bool $isComputed = false,
-        ?Carbon $computedAt = null,
-        ?Carbon $cacheExpiresAt = null,
-        array $bettingLimits = [],
-        array $blockedNumbers = [],
-        bool $autoSettlement = false,
-        bool $isActive = true,
+        private int $agentId,
+        private ?PayoutProfile $payoutProfile,
+        private ?int $payoutProfileSourceAgentId,
+        private bool $hasCustomPayoutProfile,
+        private CommissionSharingSettings $commissionSharingSettings,
+        private PayoutProfile $effectivePayoutProfile,
+        private int $effectivePayoutSourceAgentId,
+        private CommissionSharingSettings $effectiveCommissionSharingSettings,
+        private bool $isComputed = false,
+        private ?Carbon $computedAt = null,
+        private ?Carbon $cacheExpiresAt = null,
+        private array $bettingLimits = [],
+        private array $blockedNumbers = [],
+        private bool $autoSettlement = false,
+        private bool $isActive = true,
         ?Carbon $createdAt = null,
         ?Carbon $updatedAt = null
     ) {
-        $this->agentId = $agentId;
-        $this->payoutProfile = $payoutProfile;
-        $this->payoutProfileSourceAgentId = $payoutProfileSourceAgentId;
-        $this->hasCustomPayoutProfile = $hasCustomPayoutProfile;
-        $this->commissionSharingSettings = $commissionSharingSettings;
-        $this->effectivePayoutProfile = $effectivePayoutProfile;
-        $this->effectivePayoutSourceAgentId = $effectivePayoutSourceAgentId;
-        $this->effectiveCommissionSharingSettings = $effectiveCommissionSharingSettings;
-        $this->isComputed = $isComputed;
-        $this->computedAt = $computedAt;
-        $this->cacheExpiresAt = $cacheExpiresAt;
-        $this->bettingLimits = $bettingLimits;
-        $this->blockedNumbers = $blockedNumbers;
-        $this->autoSettlement = $autoSettlement;
-        $this->isActive = $isActive;
         $this->createdAt = $createdAt ?? Carbon::now();
         $this->updatedAt = $updatedAt ?? Carbon::now();
     }

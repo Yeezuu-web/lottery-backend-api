@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Auth\Services;
 
 use App\Domain\Agent\Models\Agent;
@@ -39,7 +41,7 @@ final class AuthenticationDomainService implements AuthenticationDomainServiceIn
         return match ($audience) {
             'upline' => $this->canAccessUpline($agentType),
             'member' => $this->canAccessMember($agentType),
-            default => throw new ValidationException("Invalid audience: {$audience}")
+            default => throw new ValidationException('Invalid audience: '.$audience)
         };
     }
 
@@ -52,6 +54,17 @@ final class AuthenticationDomainService implements AuthenticationDomainServiceIn
         $typePermissions = $this->getTypeSpecificPermissions($agent->agentType(), $audience);
 
         return array_merge($basePermissions, $typePermissions);
+    }
+
+    /**
+     * Validate audience parameter
+     */
+    public function validateAudience(string $audience): void
+    {
+        $validAudiences = ['upline', 'member'];
+        if (! in_array($audience, $validAudiences, true)) {
+            throw new ValidationException('Invalid audience. Must be: '.implode(', ', $validAudiences));
+        }
     }
 
     /**
@@ -129,16 +142,5 @@ final class AuthenticationDomainService implements AuthenticationDomainServiceIn
             ],
             default => []
         };
-    }
-
-    /**
-     * Validate audience parameter
-     */
-    public function validateAudience(string $audience): void
-    {
-        $validAudiences = ['upline', 'member'];
-        if (! in_array($audience, $validAudiences, true)) {
-            throw new ValidationException('Invalid audience. Must be: '.implode(', ', $validAudiences));
-        }
     }
 }

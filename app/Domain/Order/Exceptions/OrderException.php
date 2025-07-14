@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\Exceptions;
 
 use App\Shared\Exceptions\DomainException;
@@ -8,27 +10,27 @@ final class OrderException extends DomainException
 {
     public static function invalidBetData(string $message): self
     {
-        return new self("Invalid bet data: {$message}");
+        return new self('Invalid bet data: '.$message);
     }
 
     public static function invalidOrderStatus(string $currentStatus, string $attemptedStatus): self
     {
-        return new self("Cannot change order status from {$currentStatus} to {$attemptedStatus}");
+        return new self(sprintf('Cannot change order status from %s to %s', $currentStatus, $attemptedStatus));
     }
 
     public static function orderAlreadyPrinted(string $orderNumber): self
     {
-        return new self("Order {$orderNumber} is already printed");
+        return new self(sprintf('Order %s is already printed', $orderNumber));
     }
 
     public static function orderCannotBeCancelled(string $orderNumber, string $status): self
     {
-        return new self("Order {$orderNumber} cannot be cancelled in status: {$status}");
+        return new self(sprintf('Order %s cannot be cancelled in status: %s', $orderNumber, $status));
     }
 
     public static function invalidTotalAmount(float $calculated, float $provided): self
     {
-        return new self("Total amount mismatch. Calculated: {$calculated}, Provided: {$provided}");
+        return new self(sprintf('Total amount mismatch. Calculated: %s, Provided: %s', $calculated, $provided));
     }
 
     public static function emptyExpandedNumbers(): self
@@ -43,32 +45,32 @@ final class OrderException extends DomainException
 
     public static function bettingWindowClosed(string $period): self
     {
-        return new self("Betting window is closed for {$period} period");
+        return new self(sprintf('Betting window is closed for %s period', $period));
     }
 
     public static function insufficientBalance(float $required, float $available): self
     {
-        return new self("Insufficient balance. Required: {$required}, Available: {$available}");
+        return new self(sprintf('Insufficient balance. Required: %s, Available: %s', $required, $available));
     }
 
     public static function invalidNumberExpansion(string $number, string $option): self
     {
-        return new self("Cannot expand number {$number} with option {$option}");
+        return new self(sprintf('Cannot expand number %s with option %s', $number, $option));
     }
 
     public static function channelNotAvailable(string $channel, string $period): self
     {
-        return new self("Channel {$channel} is not available for {$period} period");
+        return new self(sprintf('Channel %s is not available for %s period', $channel, $period));
     }
 
     public static function minimumBetAmountNotMet(float $amount, float $minimum): self
     {
-        return new self("Bet amount {$amount} is below minimum {$minimum}");
+        return new self(sprintf('Bet amount %s is below minimum %s', $amount, $minimum));
     }
 
     public static function maximumBetAmountExceeded(float $amount, float $maximum): self
     {
-        return new self("Bet amount {$amount} exceeds maximum {$maximum}");
+        return new self(sprintf('Bet amount %s exceeds maximum %s', $amount, $maximum));
     }
 
     public static function cartEmpty(): self
@@ -78,7 +80,7 @@ final class OrderException extends DomainException
 
     public static function cartItemNotFound(int $itemId): self
     {
-        return new self("Cart item {$itemId} not found");
+        return new self(sprintf('Cart item %d not found', $itemId));
     }
 
     public static function duplicateCartItem(): self
@@ -88,41 +90,41 @@ final class OrderException extends DomainException
 
     public static function orderNotFound(string $orderNumber): self
     {
-        return new self("Order {$orderNumber} not found");
+        return new self(sprintf('Order %s not found', $orderNumber));
     }
 
     public static function groupNotFound(string $groupId): self
     {
-        return new self("Order group {$groupId} not found");
+        return new self(sprintf('Order group %s not found', $groupId));
     }
 
     public static function invalidAgent(int $agentId): self
     {
-        return new self("Invalid agent ID: {$agentId}");
+        return new self('Invalid agent ID: '.$agentId);
     }
 
     public static function agentNotAllowedToBet(int $agentId): self
     {
-        return new self("Agent {$agentId} is not allowed to place bets");
+        return new self(sprintf('Agent %d is not allowed to place bets', $agentId));
     }
 
     public static function dailyBetLimitExceeded(float $current, float $limit): self
     {
-        return new self("Daily bet limit exceeded. Current: {$current}, Limit: {$limit}");
+        return new self(sprintf('Daily bet limit exceeded. Current: %s, Limit: %s', $current, $limit));
     }
 
     public static function blockedNumber(string $number): self
     {
-        return new self("Number {$number} is blocked for betting");
+        return new self(sprintf('Number %s is blocked for betting', $number));
     }
 
     public static function invalidCurrency(string $currency): self
     {
-        return new self("Invalid currency: {$currency}");
+        return new self('Invalid currency: '.$currency);
     }
 
     public static function processingError(string $message): self
     {
-        return new self("Order processing error: {$message}");
+        return new self('Order processing error: '.$message);
     }
 }

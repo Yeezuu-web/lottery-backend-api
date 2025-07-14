@@ -1,113 +1,97 @@
 <?php
 
-namespace Tests\Unit\Application\Auth\DTOs;
-
+declare(strict_types=1);
 use App\Application\Auth\DTOs\AuthenticateUserResponse;
-use PHPUnit\Framework\TestCase;
 use Tests\Helpers\AuthTestHelper;
 
-class AuthenticateUserResponseTest extends TestCase
-{
-    public function test_can_create_authenticate_user_response()
-    {
-        $agent = AuthTestHelper::createTestAgent();
-        $tokenPair = AuthTestHelper::createTestTokenPair();
+test('can create authenticate user response', function (): void {
+    $agent = AuthTestHelper::createTestAgent();
+    $tokenPair = AuthTestHelper::createTestTokenPair();
 
-        $response = new AuthenticateUserResponse(
-            $agent,
-            $tokenPair,
-            true,
-            'Authentication successful'
-        );
+    $response = new AuthenticateUserResponse(
+        $agent,
+        $tokenPair,
+        true,
+        'Authentication successful'
+    );
 
-        $this->assertEquals($agent, $response->agent);
-        $this->assertEquals($tokenPair, $response->tokenPair);
-        $this->assertTrue($response->success);
-        $this->assertEquals('Authentication successful', $response->message);
-    }
+    expect($response->agent)->toEqual($agent);
+    expect($response->tokenPair)->toEqual($tokenPair);
+    expect($response->success)->toBeTrue();
+    expect($response->message)->toEqual('Authentication successful');
+});
+test('success static method', function (): void {
+    $agent = AuthTestHelper::createTestAgent();
+    $tokenPair = AuthTestHelper::createTestTokenPair();
 
-    public function test_success_static_method()
-    {
-        $agent = AuthTestHelper::createTestAgent();
-        $tokenPair = AuthTestHelper::createTestTokenPair();
+    $response = AuthenticateUserResponse::success($agent, $tokenPair);
 
-        $response = AuthenticateUserResponse::success($agent, $tokenPair);
+    expect($response->agent)->toEqual($agent);
+    expect($response->tokenPair)->toEqual($tokenPair);
+    expect($response->success)->toBeTrue();
+    expect($response->message)->toEqual('Authentication successful');
+});
+test('success static method with custom message', function (): void {
+    $agent = AuthTestHelper::createTestAgent();
+    $tokenPair = AuthTestHelper::createTestTokenPair();
+    $customMessage = 'Custom success message';
 
-        $this->assertEquals($agent, $response->agent);
-        $this->assertEquals($tokenPair, $response->tokenPair);
-        $this->assertTrue($response->success);
-        $this->assertEquals('Authentication successful', $response->message);
-    }
+    $response = AuthenticateUserResponse::success($agent, $tokenPair, $customMessage);
 
-    public function test_success_static_method_with_custom_message()
-    {
-        $agent = AuthTestHelper::createTestAgent();
-        $tokenPair = AuthTestHelper::createTestTokenPair();
-        $customMessage = 'Custom success message';
+    expect($response->message)->toEqual($customMessage);
+    expect($response->success)->toBeTrue();
+});
+test('failure static method throws exception', function (): void {
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('Use exceptions for failure cases in use cases');
 
-        $response = AuthenticateUserResponse::success($agent, $tokenPair, $customMessage);
+    AuthenticateUserResponse::failure();
+});
+test('to array returns correct structure', function (): void {
+    $agent = AuthTestHelper::createTestAgent(
+        123,
+        'A',
+        'test@example.com',
+        'Test User',
+        'company',
+        true
+    );
+    $tokenPair = AuthTestHelper::createTestTokenPair();
 
-        $this->assertEquals($customMessage, $response->message);
-        $this->assertTrue($response->success);
-    }
+    $response = AuthenticateUserResponse::success($agent, $tokenPair);
+    $array = $response->toArray();
 
-    public function test_failure_static_method_throws_exception()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Use exceptions for failure cases in use cases');
+    expect($array)->toHaveKey('success');
+    expect($array)->toHaveKey('message');
+    expect($array)->toHaveKey('agent');
+    expect($array)->toHaveKey('tokens');
 
-        AuthenticateUserResponse::failure('Authentication failed');
-    }
+    expect($array['success'])->toBeTrue();
+    expect($array['message'])->toEqual('Authentication successful');
 
-    public function test_to_array_returns_correct_structure()
-    {
-        $agent = AuthTestHelper::createTestAgent(
-            123,
-            'A',
-            'test@example.com',
-            'Test User',
-            'company',
-            true
-        );
-        $tokenPair = AuthTestHelper::createTestTokenPair();
+    // Check agent structure
+    expect($array['agent']['id'])->toEqual(123);
+    expect($array['agent']['username'])->toEqual('A');
+    expect($array['agent']['email'])->toEqual('test@example.com');
+    expect($array['agent']['name'])->toEqual('Test User');
+    expect($array['agent']['agent_type'])->toEqual('company');
+    expect($array['agent']['is_active'])->toBeTrue();
 
-        $response = AuthenticateUserResponse::success($agent, $tokenPair);
-        $array = $response->toArray();
+    // Check tokens structure
+    expect($array['tokens'])->toHaveKey('access_token');
+    expect($array['tokens'])->toHaveKey('refresh_token');
+    expect($array['tokens'])->toHaveKey('access_expires_at');
+    expect($array['tokens'])->toHaveKey('refresh_expires_at');
+});
+test('properties are readonly', function (): void {
+    $agent = AuthTestHelper::createTestAgent();
+    $tokenPair = AuthTestHelper::createTestTokenPair();
 
-        $this->assertArrayHasKey('success', $array);
-        $this->assertArrayHasKey('message', $array);
-        $this->assertArrayHasKey('agent', $array);
-        $this->assertArrayHasKey('tokens', $array);
+    $response = new AuthenticateUserResponse($agent, $tokenPair);
 
-        $this->assertTrue($array['success']);
-        $this->assertEquals('Authentication successful', $array['message']);
-
-        // Check agent structure
-        $this->assertEquals(123, $array['agent']['id']);
-        $this->assertEquals('A', $array['agent']['username']);
-        $this->assertEquals('test@example.com', $array['agent']['email']);
-        $this->assertEquals('Test User', $array['agent']['name']);
-        $this->assertEquals('company', $array['agent']['agent_type']);
-        $this->assertTrue($array['agent']['is_active']);
-
-        // Check tokens structure
-        $this->assertArrayHasKey('access_token', $array['tokens']);
-        $this->assertArrayHasKey('refresh_token', $array['tokens']);
-        $this->assertArrayHasKey('access_expires_at', $array['tokens']);
-        $this->assertArrayHasKey('refresh_expires_at', $array['tokens']);
-    }
-
-    public function test_properties_are_readonly()
-    {
-        $agent = AuthTestHelper::createTestAgent();
-        $tokenPair = AuthTestHelper::createTestTokenPair();
-
-        $response = new AuthenticateUserResponse($agent, $tokenPair);
-
-        // These should be readonly properties
-        $this->assertTrue(property_exists($response, 'agent'));
-        $this->assertTrue(property_exists($response, 'tokenPair'));
-        $this->assertTrue(property_exists($response, 'success'));
-        $this->assertTrue(property_exists($response, 'message'));
-    }
-}
+    // These should be readonly properties
+    expect(property_exists($response, 'agent'))->toBeTrue();
+    expect(property_exists($response, 'tokenPair'))->toBeTrue();
+    expect(property_exists($response, 'success'))->toBeTrue();
+    expect(property_exists($response, 'message'))->toBeTrue();
+});

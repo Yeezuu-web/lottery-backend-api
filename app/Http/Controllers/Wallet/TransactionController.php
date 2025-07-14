@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Wallet;
 
 use App\Application\Wallet\Commands\TransferFundsCommand;
@@ -13,10 +15,11 @@ use App\Http\Requests\Wallet\TransferFundsRequest;
 use App\Infrastructure\Wallet\Services\WalletService;
 use App\Traits\HttpApiResponse;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class TransactionController extends Controller
+final class TransactionController extends Controller
 {
     use HttpApiResponse;
 
@@ -33,7 +36,7 @@ class TransactionController extends Controller
         try {
             $transaction = $this->transactionRepository->findById($transactionId);
 
-            if (! $transaction) {
+            if (! $transaction instanceof \App\Domain\Wallet\Models\Transaction) {
                 return $this->error(
                     message: 'Transaction not found',
                     code: 404
@@ -44,11 +47,11 @@ class TransactionController extends Controller
                 data: TransactionResponse::fromDomain($transaction)->toArray(),
                 message: 'Transaction retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return $this->error(
                 message: 'Failed to retrieve transaction',
-                errors: ['system' => $e->getMessage()],
-                code: 500
+                code: 500,
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -90,21 +93,19 @@ class TransactionController extends Controller
 
             // Apply filters if provided
             if ($transactionType) {
-                $transactions = array_filter($transactions, fn ($t) => $t->getType()->value === $transactionType);
+                $transactions = array_filter($transactions, fn ($t): bool => $t->getType()->value === $transactionType);
             }
 
             if ($status) {
-                $transactions = array_filter($transactions, fn ($t) => $t->getStatus()->value === $status);
+                $transactions = array_filter($transactions, fn ($t): bool => $t->getStatus()->value === $status);
             }
 
             if ($fromDate && $toDate) {
-                $transactions = array_filter($transactions, function ($t) use ($fromDate, $toDate) {
-                    return $t->getCreatedAt()->between($fromDate, $toDate);
-                });
+                $transactions = array_filter($transactions, fn ($t) => $t->getCreatedAt()->between($fromDate, $toDate));
             }
 
             $transactionResponses = array_map(
-                fn ($transaction) => TransactionResponse::fromDomain($transaction)->toArray(),
+                fn ($transaction): array => TransactionResponse::fromDomain($transaction)->toArray(),
                 array_values($transactions)
             );
 
@@ -122,11 +123,11 @@ class TransactionController extends Controller
                 ],
                 message: 'Transaction history retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return $this->error(
                 message: 'Failed to retrieve transaction history',
-                errors: ['system' => $e->getMessage()],
-                code: 500
+                code: 500,
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -151,8 +152,8 @@ class TransactionController extends Controller
         if (! $result->success) {
             return $this->error(
                 message: $result->message,
-                errors: $result->errors,
-                code: $this->getStatusCodeFromMessage($result->message)
+                code: $this->getStatusCodeFromMessage($result->message),
+                errors: $result->errors
             );
         }
 
@@ -196,11 +197,11 @@ class TransactionController extends Controller
                 ],
                 message: 'Transaction summary retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return $this->error(
                 message: 'Failed to retrieve transaction summary',
-                errors: ['system' => $e->getMessage()],
-                code: 500
+                code: 500,
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -213,7 +214,7 @@ class TransactionController extends Controller
         try {
             $transaction = $this->transactionRepository->findByReference($reference);
 
-            if (! $transaction) {
+            if (! $transaction instanceof \App\Domain\Wallet\Models\Transaction) {
                 return $this->error(
                     message: 'Transaction not found',
                     code: 404
@@ -224,11 +225,11 @@ class TransactionController extends Controller
                 data: TransactionResponse::fromDomain($transaction)->toArray(),
                 message: 'Transaction retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return $this->error(
                 message: 'Failed to retrieve transaction',
-                errors: ['system' => $e->getMessage()],
-                code: 500
+                code: 500,
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -247,7 +248,7 @@ class TransactionController extends Controller
             );
 
             $transactionResponses = array_map(
-                fn ($transaction) => TransactionResponse::fromDomain($transaction)->toArray(),
+                fn ($transaction): array => TransactionResponse::fromDomain($transaction)->toArray(),
                 $transactions
             );
 
@@ -259,11 +260,11 @@ class TransactionController extends Controller
                 ],
                 message: 'Latest transactions retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return $this->error(
                 message: 'Failed to retrieve latest transactions',
-                errors: ['system' => $e->getMessage()],
-                code: 500
+                code: 500,
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -283,11 +284,11 @@ class TransactionController extends Controller
                 ],
                 message: 'Transaction statistics retrieved successfully'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return $this->error(
                 message: 'Failed to retrieve transaction statistics',
-                errors: ['system' => $e->getMessage()],
-                code: 500
+                code: 500,
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }

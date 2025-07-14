@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Auth\Services;
 
 use App\Domain\Auth\Contracts\TokenServiceInterface;
@@ -12,14 +14,9 @@ use Illuminate\Support\Facades\Cache;
  * Infrastructure service for authentication-related operations
  * Handles token blacklisting, session management, and other infrastructure concerns
  */
-final class AuthenticationService implements AuthenticationServiceInterface
+final readonly class AuthenticationService implements AuthenticationServiceInterface
 {
-    private readonly TokenServiceInterface $tokenService;
-
-    public function __construct(TokenServiceInterface $tokenService)
-    {
-        $this->tokenService = $tokenService;
-    }
+    public function __construct(private TokenServiceInterface $tokenService) {}
 
     /**
      * Store refresh token in cache for tracking
@@ -81,7 +78,7 @@ final class AuthenticationService implements AuthenticationServiceInterface
         try {
             $jwtToken = $this->tokenService->decodeToken($token, $audience);
 
-            if (! $jwtToken) {
+            if (! $jwtToken instanceof JWTToken) {
                 return null;
             }
 
@@ -92,7 +89,7 @@ final class AuthenticationService implements AuthenticationServiceInterface
 
             return $jwtToken;
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -115,7 +112,7 @@ final class AuthenticationService implements AuthenticationServiceInterface
     {
         // Clear any session-specific data for the agent
         // This could include clearing specific cache entries, etc.
-        $sessionKey = "session:agent:{$agentId}";
+        $sessionKey = 'session:agent:'.$agentId;
         Cache::forget($sessionKey);
     }
 

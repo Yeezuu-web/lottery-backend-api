@@ -1,18 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\DTOs;
 
-final class RefreshTokenCommand
+final readonly class RefreshTokenCommand
 {
-    public readonly string $refreshToken;
-
-    public readonly string $audience;
-
-    public function __construct(string $refreshToken, string $audience)
-    {
-        $this->refreshToken = $refreshToken;
-        $this->audience = $audience;
-    }
+    public function __construct(public string $refreshToken, public string $audience) {}
 
     public function toArray(): array
     {

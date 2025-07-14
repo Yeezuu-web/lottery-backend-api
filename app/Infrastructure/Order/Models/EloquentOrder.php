@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Order\Models;
 
 use App\Infrastructure\Agent\Models\EloquentAgent;
@@ -9,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class EloquentOrder extends Model
+final class EloquentOrder extends Model
 {
     use HasFactory;
 
@@ -272,7 +274,7 @@ class EloquentOrder extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return number_format($this->total_amount, 2) . ' ' . $this->currency;
+        return number_format($this->total_amount, 2).' '.$this->currency;
     }
 
     /**
@@ -288,6 +290,6 @@ class EloquentOrder extends Model
      */
     public function getDisplayNameAttribute(): string
     {
-        return "Order #{$this->order_number}";
+        return 'Order #'.$this->order_number;
     }
 }

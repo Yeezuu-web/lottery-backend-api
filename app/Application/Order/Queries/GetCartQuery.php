@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Order\Queries;
 
 final readonly class GetCartQuery

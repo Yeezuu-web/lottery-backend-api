@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\AgentSettings;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateCommissionRateRequest extends FormRequest
+final class UpdateCommissionRateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -27,18 +29,18 @@ class UpdateCommissionRateRequest extends FormRequest
         ];
     }
 
+    public function getCommissionRate(): ?float
+    {
+        $rate = $this->input('commission_rate');
+
+        return $rate !== null ? (float) $rate : null;
+    }
+
     protected function prepareForValidation(): void
     {
         // Convert empty strings to null for nullable fields
         $this->merge([
             'commission_rate' => $this->commission_rate === '' ? null : $this->commission_rate,
         ]);
-    }
-
-    public function getCommissionRate(): ?float
-    {
-        $rate = $this->input('commission_rate');
-
-        return $rate !== null ? (float) $rate : null;
     }
 }

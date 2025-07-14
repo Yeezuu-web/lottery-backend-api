@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Contracts;
 
 use App\Domain\AgentSettings\Models\AgentSettings;

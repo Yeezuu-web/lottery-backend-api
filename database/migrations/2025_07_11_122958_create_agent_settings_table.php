@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +17,7 @@ return new class extends Migration
         Schema::dropIfExists('agent_settings');
 
         // Create optimized agent_settings table
-        Schema::create('agent_settings', function (Blueprint $table) {
+        Schema::create('agent_settings', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('agent_id')->unique();
 
@@ -63,7 +65,7 @@ return new class extends Migration
         });
 
         // === DEFAULT PAYOUT PROFILES CONFIGURATION ===
-        Schema::create('payout_profile_templates', function (Blueprint $table) {
+        Schema::create('payout_profile_templates', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 50); // 'default', 'conservative', 'aggressive'
             $table->string('description')->nullable();
