@@ -9,13 +9,13 @@ use App\Application\Order\Commands\SubmitCartCommand;
 use App\Application\Order\Contracts\CartRepositoryInterface;
 use App\Application\Order\UseCases\AddToCartUseCase;
 use App\Application\Order\UseCases\SubmitCartUseCase;
+use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\AddToCartRequest;
 use App\Http\Requests\Order\SubmitCartRequest;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 final class OrderController extends Controller
 {
@@ -32,13 +32,13 @@ final class OrderController extends Controller
     {
         try {
             $command = new AddToCartCommand(
-                agentId: Auth::id(),
+                agentId: $request->attributes->get('agent_id'),
                 period: $request->validated('period'),
                 type: $request->validated('type'),
-                channels: $request->validated('channels'),
+                channels: (array) $request->validated('channels'),
                 option: $request->validated('option'),
                 number: $request->validated('number'),
-                amount: $request->validated('amount')
+                amount: (float) $request->validated('amount')
             );
 
             $result = $this->addToCartUseCase->execute($command);
@@ -60,13 +60,13 @@ final class OrderController extends Controller
     /**
      * Get current cart contents
      */
-    public function getCart(): JsonResponse
+    public function getCart(Request $request): JsonResponse
     {
         try {
-            $agentId = Auth::id();
+            $agentId = $request->attributes->get('agent_id');
 
             // Get cart items using the repository
-            $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
+            $agent = app(AgentRepositoryInterface::class)->findById($agentId);
 
             if (! $agent) {
                 return response()->json([
@@ -113,7 +113,7 @@ final class OrderController extends Controller
     public function submitCart(SubmitCartRequest $request): JsonResponse
     {
         try {
-            $command = new SubmitCartCommand(agentId: Auth::id());
+            $command = new SubmitCartCommand(agentId: $request->attributes->get('agent_id'));
 
             $result = $this->submitCartUseCase->execute($command);
 
@@ -134,12 +134,12 @@ final class OrderController extends Controller
     /**
      * Clear cart
      */
-    public function clearCart(): JsonResponse
+    public function clearCart(Request $request): JsonResponse
     {
         try {
-            $agentId = Auth::id();
+            $agentId = $request->attributes->get('agent_id');
 
-            $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
+            $agent = app(AgentRepositoryInterface::class)->findById($agentId);
 
             if (! $agent) {
                 return response()->json([
@@ -169,9 +169,9 @@ final class OrderController extends Controller
     public function removeFromCart(Request $request, int $itemId): JsonResponse
     {
         try {
-            $agentId = Auth::id();
+            $agentId = $request->attributes->get('agent_id');
 
-            $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
+            $agent = app(AgentRepositoryInterface::class)->findById($agentId);
 
             if (! $agent) {
                 return response()->json([
@@ -198,14 +198,14 @@ final class OrderController extends Controller
     /**
      * Get order history
      */
-    public function getOrderHistory(Request $request): JsonResponse
+    public function getOrderHistory(Request $request, AgentRepositoryInterface $agentRepository): JsonResponse
     {
         try {
-            $agentId = Auth::id();
+            $agentId = $request->attributes->get('agent_id');
 
-            $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
+            $agent = $agentRepository->findById($agentId);
 
-            if (! $agent) {
+            if (!$agent instanceof \App\Domain\Agent\Models\Agent) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Agent not found',
@@ -222,8 +222,8 @@ final class OrderController extends Controller
                 'period' => $request->query('period'),
             ];
 
-            $limit = $request->query('limit', 20);
-            $offset = $request->query('offset', 0);
+            $limit = (int) $request->query('per_page', 20);
+            $offset = (int) $request->query('page_size', 0);
 
             $orders = $orderRepository->findByAgent($agent, $filters, $limit, $offset);
 
@@ -233,8 +233,8 @@ final class OrderController extends Controller
                 'data' => [
                     'orders' => $orders,
                     'pagination' => [
-                        'limit' => $limit,
-                        'offset' => $offset,
+                        'per_page' => $limit,
+                        'page_size' => $offset,
                         'total' => count($orders),
                     ],
                 ],
@@ -251,7 +251,7 @@ final class OrderController extends Controller
     /**
      * Get order by ID
      */
-    public function getOrder(int $orderId): JsonResponse
+    public function getOrder(Request $request, int $orderId): JsonResponse
     {
         try {
             $orderRepository = app(\App\Application\Order\Contracts\OrderRepositoryInterface::class);
@@ -266,7 +266,7 @@ final class OrderController extends Controller
             }
 
             // Check if the order belongs to the authenticated agent
-            if ($order->agentId() !== Auth::id()) {
+            if ($order->agentId() !== $request->attributes->get('agent_id')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized',

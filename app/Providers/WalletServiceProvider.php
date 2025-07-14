@@ -64,6 +64,12 @@ final class WalletServiceProvider extends ServiceProvider
             $app->make(CreditWalletUseCase::class),
             $app->make(GetWalletUseCase::class)
         ));
+
+        // Bind the interface to the service
+        $this->app->bind(
+            \App\Application\Wallet\Contracts\WalletServiceInterface::class,
+            WalletService::class
+        );
     }
 
     /**
@@ -87,6 +93,7 @@ final class WalletServiceProvider extends ServiceProvider
             DebitWalletUseCase::class,
             GetWalletUseCase::class,
             WalletService::class,
+            \App\Application\Wallet\Contracts\WalletServiceInterface::class,
         ];
     }
 }

@@ -31,7 +31,7 @@ Route::prefix('v1/agent-settings')->middleware(['upline.auth'])->group(function 
 });
 
 // Order Management routes (protected by authentication middleware)
-Route::prefix('v1')->middleware(['upline.auth'])->group(function (): void {
+Route::prefix('v1')->middleware(['member.auth'])->group(function (): void {
     require __DIR__.'/api/orders.php';
 });
 

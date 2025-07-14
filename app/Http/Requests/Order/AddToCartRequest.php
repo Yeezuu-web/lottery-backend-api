@@ -66,7 +66,7 @@ final class AddToCartRequest extends FormRequest
             'amount' => [
                 'required',
                 'numeric',
-                'min:1000',
+                'min:100',
                 'max:1000000',
             ],
         ];

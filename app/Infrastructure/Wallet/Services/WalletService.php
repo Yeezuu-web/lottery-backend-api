@@ -10,6 +10,7 @@ use App\Application\Wallet\Commands\DebitWalletCommand;
 use App\Application\Wallet\Commands\TransferFundsCommand;
 use App\Application\Wallet\Contracts\TransactionRepositoryInterface;
 use App\Application\Wallet\Contracts\WalletRepositoryInterface;
+use App\Application\Wallet\Contracts\WalletServiceInterface;
 use App\Application\Wallet\Responses\WalletOperationResponse;
 use App\Application\Wallet\UseCases\CreateWalletUseCase;
 use App\Application\Wallet\UseCases\CreditWalletUseCase;
@@ -23,7 +24,7 @@ use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-final readonly class WalletService
+final readonly class WalletService implements WalletServiceInterface
 {
     public function __construct(
         private WalletRepositoryInterface $walletRepository,

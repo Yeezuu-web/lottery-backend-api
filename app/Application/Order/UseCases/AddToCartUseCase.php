@@ -108,12 +108,12 @@ final readonly class AddToCartUseCase
         $amount = Money::fromAmount($command->amount(), $command->currency());
 
         return new BetData(
-            $command->period(),
-            $command->type(),
-            $command->channels(),
-            $command->option(),
-            $command->number(),
-            $amount
+            period: $command->period(),
+            type: $command->type(),
+            channels: $command->channels(),
+            option: $command->option(),
+            number: $command->number(),
+            amount: $amount
         );
     }
 

@@ -7,7 +7,7 @@ namespace App\Domain\Order\ValueObjects;
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Shared\Exceptions\ValidationException;
 
-final readonly class BetData
+final readonly class BetDataBackup
 {
     public function __construct(
         private string $period,
@@ -20,12 +20,12 @@ final readonly class BetData
         private array $channelWeights = [],
         private ?Money $totalAmount = null
     ) {
-        $this->validatePeriod($this->period);
-        $this->validateType($this->type);
-        $this->validateChannels($this->channels);
-        $this->validateOption($this->option);
-        $this->validateNumber($this->number);
-        $this->validateAmount($this->amount);
+        $this->validatePeriod();
+        $this->validateType();
+        $this->validateChannels();
+        $this->validateOption();
+        $this->validateNumber();
+        $this->validateAmount();
     }
 
     public static function fromArray(array $data): self
@@ -135,11 +135,6 @@ final readonly class BetData
         );
     }
 
-    public function calculateTotalMultiplier(): int
-    {
-        return count($this->expandedNumbers) * array_sum($this->channelWeights);
-    }
-
     public function is2D(): bool
     {
         return $this->type === '2D';
@@ -180,6 +175,11 @@ final readonly class BetData
         return array_sum($this->channelWeights);
     }
 
+    public function calculateTotalMultiplier(): int
+    {
+        return $this->calculateExpansionCount() * $this->calculateChannelWeight();
+    }
+
     public function toArray(): array
     {
         return [
@@ -206,99 +206,95 @@ final readonly class BetData
             && $this->amount->equals($other->amount);
     }
 
-    private function validatePeriod(string $period): void
+    private function validatePeriod(): void
     {
         $validPeriods = ['evening', 'night'];
-        if (! in_array($period, $validPeriods, true)) {
+        if (! in_array($this->period, $validPeriods, true)) {
             throw new ValidationException('Invalid period. Must be: '.implode(', ', $validPeriods));
         }
     }
 
-    private function validateType(string $type): void
+    private function validateType(): void
     {
         $validTypes = ['2D', '3D'];
-        if (! in_array($type, $validTypes, true)) {
+        if (! in_array($this->type, $validTypes, true)) {
             throw new ValidationException('Invalid type. Must be: '.implode(', ', $validTypes));
         }
     }
 
-    private function validateChannels(array $channels): void
+    private function validateChannels(): void
     {
-        if ($channels === []) {
+        if ($this->channels === []) {
             throw new ValidationException('At least one channel must be selected');
         }
 
         $validChannels = ['A', 'B', 'C', 'D', 'LO', 'HO', 'N', 'I'];
-        foreach ($channels as $channel) {
+        foreach ($this->channels as $channel) {
             if (! in_array($channel, $validChannels, true)) {
                 throw new ValidationException('Invalid channel: '.$channel);
             }
         }
 
         // Validate channel availability for period/type combination
-        $this->validateChannelAvailability($channels, $this->period);
+        $this->validateChannelAvailability();
     }
 
-    private function validateChannelAvailability(array $channels, string $period): void
+    private function validateChannelAvailability(): void
     {
         $nightChannels = ['A', 'B', 'C', 'D', 'LO'];
         $eveningChannels = ['A', 'B', 'C', 'D', 'LO', 'HO', 'N', 'I'];
 
-        $allowedChannels = $period === 'night' ? $nightChannels : $eveningChannels;
+        $allowedChannels = $this->isNightPeriod() ? $nightChannels : $eveningChannels;
 
-        foreach ($channels as $channel) {
+        foreach ($this->channels as $channel) {
             if (! in_array($channel, $allowedChannels, true)) {
-                throw new ValidationException(sprintf("Channel '%s' is not available for %s period", $channel, $period));
+                throw new ValidationException(
+                    sprintf('Channel %s is not available for %s period', $channel, $this->period)
+                );
             }
         }
     }
 
-    private function validateOption(string $option): void
+    private function validateOption(): void
     {
-        if ($option === '' || $option === '0') {
-            throw new ValidationException('Option cannot be empty');
-        }
-
-        $validOptions = ['none', 'x', 'X', '\\', '>', '>|', '<|', '><', '\\|'];
-        if (! in_array($option, $validOptions, true)) {
-            throw new ValidationException('Invalid option: '.$option.'. Must be one of: '.implode(', ', $validOptions));
+        $validOptions = ['x', '\\', '>|', '\\|', '>', 'none'];
+        if (! in_array($this->option, $validOptions, true)) {
+            throw new ValidationException('Invalid option. Must be: '.implode(', ', $validOptions));
         }
     }
 
-    private function validateNumber(string $number): void
+    private function validateNumber(): void
     {
-        if ($number === '' || $number === '0') {
-            throw new ValidationException('Bet number cannot be empty');
+        if ($this->number === '' || $this->number === '0') {
+            throw new ValidationException('Number cannot be empty');
         }
 
-        if (in_array(preg_match('/^\d+$/', $number), [0, false], true)) {
-            throw new ValidationException('Bet number must contain only digits');
+        if (in_array(preg_match('/^\d+$/', $this->number), [0, false], true)) {
+            throw new ValidationException('Number must contain only digits');
         }
 
-        $length = mb_strlen($number);
-        if ($this->type === '2D' && $length !== 2) {
-            throw new ValidationException('Bet number must be exactly 2 digits for 2D betting');
-        }
+        $length = mb_strlen($this->number);
+        $expectedLength = $this->is2D() ? 2 : 3;
 
-        if ($this->type === '3D' && $length !== 3) {
-            throw new ValidationException('Bet number must be exactly 3 digits for 3D betting');
+        if ($length !== $expectedLength) {
+            throw new ValidationException(
+                sprintf('Number must be %s digits for %s betting', $expectedLength, $this->type)
+            );
         }
     }
 
-    private function validateAmount(Money $amount): void
+    private function validateAmount(): void
     {
-        if ($amount->isZero()) {
+        if ($this->amount->isLessThanOrEqual(Money::fromAmount(0, $this->amount->currency()))) {
             throw new ValidationException('Amount must be greater than zero');
         }
 
-        if ($amount->isNegative()) {
-            throw new ValidationException('Bet amount cannot be negative');
-        }
-
-        // Minimum bet amount
-        $minimumBet = Money::fromAmount(100, $amount->currency());
-        if ($amount->isLessThan($minimumBet)) {
-            throw new ValidationException('Minimum bet amount is '.$minimumBet->amount().' '.$minimumBet->currency());
+        // Minimum bet amount validation
+        $minimumAmount = Money::fromAmount(100, $this->amount->currency()); // 100 KHR minimum
+        if ($this->amount->isLessThan($minimumAmount)) {
+            throw new ValidationException(
+                'Minimum bet amount is '.$minimumAmount->amount().' '.$minimumAmount->currency()
+            );
         }
     }
 }

@@ -49,7 +49,10 @@ final class OrderServiceProvider extends ServiceProvider
 
         $this->app->bind(
             WalletServiceInterface::class,
-            OrderWalletService::class
+            fn($app): \App\Infrastructure\Order\Services\OrderWalletService => new OrderWalletService(
+                $app->make(\App\Application\Wallet\Contracts\WalletRepositoryInterface::class),
+                $app->make(\App\Application\Wallet\Contracts\TransactionRepositoryInterface::class)
+            )
         );
 
         // Register Use Cases
