@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Application\Auth\UseCases;
+
+use App\Application\Auth\DTOs\AuthenticateUserCommand;
+use App\Application\Auth\DTOs\AuthenticateUserResponse;
+use App\Domain\Agent\Contracts\AgentRepositoryInterface;
+use App\Domain\Agent\ValueObjects\Username;
+use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
+use App\Domain\Auth\Contracts\TokenServiceInterface;
+use App\Domain\Auth\Exceptions\AuthenticationException;
+use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
+
+final class AuthenticateUserUseCase
+{
+    private readonly AgentRepositoryInterface $agentRepository;
+
+    private readonly TokenServiceInterface $tokenService;
+
+    private readonly AuthenticationDomainServiceInterface $authDomainService;
+
+    private readonly AuthenticationServiceInterface $authInfrastructureService;
+
+    public function __construct(
+        AgentRepositoryInterface $agentRepository,
+        TokenServiceInterface $tokenService,
+        AuthenticationDomainServiceInterface $authDomainService,
+        AuthenticationServiceInterface $authInfrastructureService
+    ) {
+        $this->agentRepository = $agentRepository;
+        $this->tokenService = $tokenService;
+        $this->authDomainService = $authDomainService;
+        $this->authInfrastructureService = $authInfrastructureService;
+    }
+
+    /**
+     * Execute authentication workflow
+     */
+    public function execute(AuthenticateUserCommand $command): AuthenticateUserResponse
+    {
+        // 1. Validate audience (domain validation)
+        $this->authDomainService->validateAudience($command->audience);
+
+        // 2. Find agent by username (infrastructure operation)
+        try {
+            $username = new Username($command->username);
+            $agent = $this->agentRepository->findByUsername($username);
+            if (! $agent) {
+                throw AuthenticationException::invalidCredentials();
+            }
+        } catch (\Exception $e) {
+            // If username format is invalid, treat as invalid credentials
+            throw AuthenticationException::invalidCredentials();
+        }
+
+        // 3. Verify password (infrastructure operation)
+        if (! $this->agentRepository->verifyPassword($agent, $command->password)) {
+            throw AuthenticationException::invalidCredentials();
+        }
+
+        // 4. Apply domain business rules
+        $this->authDomainService->validateAuthentication($agent, $command->audience);
+
+        // 5. Generate token pair (infrastructure operation)
+        $tokenPair = $this->tokenService->generateTokenPair($agent, $command->audience);
+
+        // 6. Store refresh token for blacklisting (infrastructure operation)
+        $this->authInfrastructureService->storeRefreshToken($tokenPair->refreshToken());
+
+        // 7. Return successful response
+        return AuthenticateUserResponse::success($agent, $tokenPair);
+    }
+}
