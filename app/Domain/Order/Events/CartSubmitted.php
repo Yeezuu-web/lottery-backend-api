@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\Events;
 
 use App\Domain\Order\ValueObjects\GroupId;
 use App\Domain\Wallet\ValueObjects\Money;
-use DateTime;
+use DateTimeImmutable;
 
 final readonly class CartSubmitted
 {
@@ -13,8 +15,13 @@ final readonly class CartSubmitted
         private GroupId $groupId,
         private array $orderIds,
         private Money $totalAmount,
-        private DateTime $occurredAt
+        private DateTimeImmutable $occurredAt
     ) {}
+
+    public static function now(int $agentId, GroupId $groupId, array $orderIds, Money $totalAmount): self
+    {
+        return new self($agentId, $groupId, $orderIds, $totalAmount, new DateTimeImmutable);
+    }
 
     public function agentId(): int
     {
@@ -36,14 +43,9 @@ final readonly class CartSubmitted
         return $this->totalAmount;
     }
 
-    public function occurredAt(): DateTime
+    public function occurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
-    }
-
-    public static function now(int $agentId, GroupId $groupId, array $orderIds, Money $totalAmount): self
-    {
-        return new self($agentId, $groupId, $orderIds, $totalAmount, new DateTime);
     }
 
     public function toArray(): array

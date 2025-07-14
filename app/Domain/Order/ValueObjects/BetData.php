@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\ValueObjects;
 
 use App\Domain\Wallet\ValueObjects\Money;
@@ -24,6 +26,23 @@ final readonly class BetData
         $this->validateOption();
         $this->validateNumber();
         $this->validateAmount();
+    }
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            period: $data['period'],
+            type: $data['type'],
+            channels: $data['channels'],
+            option: $data['option'],
+            number: $data['number'],
+            amount: Money::fromAmount($data['amount'], $data['currency']),
+            expandedNumbers: $data['expanded_numbers'] ?? [],
+            channelWeights: $data['channel_weights'] ?? [],
+            totalAmount: isset($data['total_amount']) && isset($data['currency'])
+                ? Money::fromAmount($data['total_amount'], $data['currency'])
+                : null
+        );
     }
 
     public function period(): string
@@ -177,24 +196,7 @@ final readonly class BetData
         ];
     }
 
-    public static function fromArray(array $data): self
-    {
-        return new self(
-            period: $data['period'],
-            type: $data['type'],
-            channels: $data['channels'],
-            option: $data['option'],
-            number: $data['number'],
-            amount: Money::fromAmount($data['amount'], $data['currency']),
-            expandedNumbers: $data['expanded_numbers'] ?? [],
-            channelWeights: $data['channel_weights'] ?? [],
-            totalAmount: isset($data['total_amount']) && isset($data['currency'])
-                ? Money::fromAmount($data['total_amount'], $data['currency'])
-                : null
-        );
-    }
-
-    public function equals(BetData $other): bool
+    public function equals(self $other): bool
     {
         return $this->period === $other->period
             && $this->type === $other->type
@@ -222,7 +224,7 @@ final readonly class BetData
 
     private function validateChannels(): void
     {
-        if (empty($this->channels)) {
+        if ($this->channels === []) {
             throw new ValidationException('At least one channel must be selected');
         }
 
@@ -247,7 +249,7 @@ final readonly class BetData
         foreach ($this->channels as $channel) {
             if (! in_array($channel, $allowedChannels, true)) {
                 throw new ValidationException(
-                    "Channel {$channel} is not available for {$this->period} period"
+                    sprintf('Channel %s is not available for %s period', $channel, $this->period)
                 );
             }
         }
@@ -263,20 +265,20 @@ final readonly class BetData
 
     private function validateNumber(): void
     {
-        if (empty($this->number)) {
+        if ($this->number === '' || $this->number === '0') {
             throw new ValidationException('Number cannot be empty');
         }
 
-        if (! preg_match('/^\d+$/', $this->number)) {
+        if (in_array(preg_match('/^\d+$/', $this->number), [0, false], true)) {
             throw new ValidationException('Number must contain only digits');
         }
 
-        $length = strlen($this->number);
+        $length = mb_strlen($this->number);
         $expectedLength = $this->is2D() ? 2 : 3;
 
         if ($length !== $expectedLength) {
             throw new ValidationException(
-                "Number must be {$expectedLength} digits for {$this->type} betting"
+                sprintf('Number must be %s digits for %s betting', $expectedLength, $this->type)
             );
         }
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Models;
 
 use App\Domain\Wallet\Exceptions\WalletException;
@@ -7,19 +9,19 @@ use App\Domain\Wallet\ValueObjects\Money;
 use App\Domain\Wallet\ValueObjects\WalletType;
 use Carbon\Carbon;
 
-final class Wallet
+final readonly class Wallet
 {
     public function __construct(
-        private readonly int $id,
-        private readonly int $ownerId,
-        private readonly WalletType $walletType,
-        private readonly Money $balance,
-        private readonly Money $lockedBalance,
-        private readonly string $currency,
-        private readonly bool $isActive,
-        private readonly ?Carbon $lastTransactionAt,
-        private readonly Carbon $createdAt,
-        private readonly Carbon $updatedAt
+        private int $id,
+        private int $ownerId,
+        private WalletType $walletType,
+        private Money $balance,
+        private Money $lockedBalance,
+        private string $currency,
+        private bool $isActive,
+        private ?Carbon $lastTransactionAt,
+        private Carbon $createdAt,
+        private Carbon $updatedAt
     ) {
         $this->validateBalance();
     }

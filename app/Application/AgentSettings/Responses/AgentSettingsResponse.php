@@ -1,28 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Responses;
 
 use App\Domain\AgentSettings\Models\AgentSettings;
 use JsonSerializable;
 
-final class AgentSettingsResponse implements JsonSerializable
+final readonly class AgentSettingsResponse implements JsonSerializable
 {
     public function __construct(
-        public readonly int $agentId,
-        public readonly ?array $payoutProfile,
-        public readonly ?int $payoutProfileSourceAgentId,
-        public readonly bool $hasCustomPayoutProfile,
-        public readonly array $commissionSharingSettings,
-        public readonly array $effectivePayoutProfile,
-        public readonly int $effectivePayoutSourceAgentId,
-        public readonly array $effectiveCommissionSharingSettings,
-        public readonly bool $isComputed,
-        public readonly ?string $computedAt,
-        public readonly ?string $cacheExpiresAt,
-        public readonly array $bettingLimits,
-        public readonly array $blockedNumbers,
-        public readonly bool $autoSettlement,
-        public readonly bool $isActive
+        public int $agentId,
+        public ?array $payoutProfile,
+        public ?int $payoutProfileSourceAgentId,
+        public bool $hasCustomPayoutProfile,
+        public array $commissionSharingSettings,
+        public array $effectivePayoutProfile,
+        public int $effectivePayoutSourceAgentId,
+        public array $effectiveCommissionSharingSettings,
+        public bool $isComputed,
+        public ?string $computedAt,
+        public ?string $cacheExpiresAt,
+        public array $bettingLimits,
+        public array $blockedNumbers,
+        public bool $autoSettlement,
+        public bool $isActive
     ) {}
 
     public static function fromDomain(AgentSettings $agentSettings): self

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Application
 use App\Http\Middleware\MemberAuthMiddleware;
 use App\Http\Middleware\UplineAuthMiddleware;
@@ -11,10 +13,10 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
         api: __DIR__.'/../routes/api.php',
-        apiPrefix: 'api',
+        commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        apiPrefix: 'api',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Register auth middleware
@@ -25,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Handle domain exceptions with appropriate HTTP status codes
-        $exceptions->render(function (\App\Shared\Exceptions\DomainException $e, $request) {
+        $exceptions->render(function (App\Shared\Exceptions\DomainException $e, $request) {
             // Only handle API requests with JSON responses
             if ($request->expectsJson() || $request->is('api/*')) {
                 $message = $e->getMessage();

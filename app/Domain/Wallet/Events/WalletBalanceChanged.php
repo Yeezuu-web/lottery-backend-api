@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Events;
 
 use App\Domain\Wallet\Models\Wallet;
 use App\Domain\Wallet\ValueObjects\Money;
 use Carbon\Carbon;
 
-final class WalletBalanceChanged
+final readonly class WalletBalanceChanged
 {
     public function __construct(
-        public readonly int $walletId,
-        public readonly int $ownerId,
-        public readonly array $previousBalance,
-        public readonly array $newBalance,
-        public readonly string $reason,
-        public readonly ?int $transactionId,
-        public readonly Carbon $occurredAt
+        public int $walletId,
+        public int $ownerId,
+        public array $previousBalance,
+        public array $newBalance,
+        public string $reason,
+        public ?int $transactionId,
+        public Carbon $occurredAt
     ) {}
 
     public static function create(

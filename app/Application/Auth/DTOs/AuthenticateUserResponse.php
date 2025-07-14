@@ -1,42 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\DTOs;
 
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Auth\ValueObjects\TokenPair;
+use InvalidArgumentException;
 
-final class AuthenticateUserResponse
+final readonly class AuthenticateUserResponse
 {
-    public readonly Agent $agent;
-
-    public readonly TokenPair $tokenPair;
-
-    public readonly bool $success;
-
-    public readonly ?string $message;
-
-    public function __construct(
-        Agent $agent,
-        TokenPair $tokenPair,
-        bool $success = true,
-        ?string $message = null
-    ) {
-        $this->agent = $agent;
-        $this->tokenPair = $tokenPair;
-        $this->success = $success;
-        $this->message = $message;
-    }
+    public function __construct(public Agent $agent, public TokenPair $tokenPair, public bool $success = true, public ?string $message = null) {}
 
     public static function success(Agent $agent, TokenPair $tokenPair, string $message = 'Authentication successful'): self
     {
         return new self($agent, $tokenPair, true, $message);
     }
 
-    public static function failure(string $message): self
+    public static function failure(): self
     {
         // For failure case, we don't have agent/tokens, but we need the interface to be consistent
         // In practice, use cases will throw exceptions for failures instead of returning failure responses
-        throw new \InvalidArgumentException('Use exceptions for failure cases in use cases');
+        throw new InvalidArgumentException('Use exceptions for failure cases in use cases');
     }
 
     public function toArray(): array

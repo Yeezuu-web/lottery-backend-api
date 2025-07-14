@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Wallet;
 
 use App\Domain\Wallet\ValueObjects\Money;
@@ -7,7 +9,7 @@ use App\Domain\Wallet\ValueObjects\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class DebitWalletRequest extends FormRequest
+final class DebitWalletRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,7 +20,7 @@ class DebitWalletRequest extends FormRequest
     {
         $debitTypes = array_map(
             fn ($type) => $type->value,
-            array_filter(TransactionType::cases(), fn ($type) => $type->isDebit())
+            array_filter(TransactionType::cases(), fn ($type): bool => $type->isDebit())
         );
 
         return [
@@ -60,14 +62,6 @@ class DebitWalletRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'currency' => $this->currency ?? 'KHR',
-            'reference' => $this->reference ?? $this->generateReference(),
-        ]);
-    }
-
     public function getAmount(): Money
     {
         return Money::fromFloat(
@@ -104,6 +98,14 @@ class DebitWalletRequest extends FormRequest
     public function getRelatedTransactionId(): ?int
     {
         return $this->input('related_transaction_id');
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'currency' => $this->currency ?? 'KHR',
+            'reference' => $this->reference ?? $this->generateReference(),
+        ]);
     }
 
     private function generateReference(): string

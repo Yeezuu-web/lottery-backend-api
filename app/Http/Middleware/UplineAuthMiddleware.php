@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
@@ -7,14 +9,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class UplineAuthMiddleware
+final readonly class UplineAuthMiddleware
 {
-    private readonly AuthenticationServiceInterface $authService;
-
-    public function __construct(AuthenticationServiceInterface $authService)
-    {
-        $this->authService = $authService;
-    }
+    public function __construct(private AuthenticationServiceInterface $authService) {}
 
     /**
      * Handle an incoming request.
@@ -23,7 +20,7 @@ class UplineAuthMiddleware
     {
         $token = $this->extractToken($request);
 
-        if (! $token) {
+        if ($token === null || $token === '' || $token === '0') {
             return response()->json([
                 'success' => false,
                 'message' => 'Authentication required',
@@ -33,7 +30,7 @@ class UplineAuthMiddleware
 
         $jwtToken = $this->authService->verifyToken($token, 'upline');
 
-        if (! $jwtToken) {
+        if (! $jwtToken instanceof \App\Domain\Auth\ValueObjects\JWTToken) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired token',
@@ -69,7 +66,7 @@ class UplineAuthMiddleware
         // Try Authorization header first
         $authHeader = $request->header('Authorization');
         if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
-            return substr($authHeader, 7);
+            return mb_substr($authHeader, 7);
         }
 
         // Try cookie as fallback

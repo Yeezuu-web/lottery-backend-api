@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Application\Order\Contracts\CartRepositoryInterface;
@@ -16,7 +18,7 @@ use App\Infrastructure\Order\Services\NumberExpansionService;
 use App\Infrastructure\Order\Services\OrderWalletService;
 use Illuminate\Support\ServiceProvider;
 
-class OrderServiceProvider extends ServiceProvider
+final class OrderServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
@@ -51,24 +53,20 @@ class OrderServiceProvider extends ServiceProvider
         );
 
         // Register Use Cases
-        $this->app->singleton(AddToCartUseCase::class, function ($app) {
-            return new AddToCartUseCase(
-                $app->make(CartRepositoryInterface::class),
-                $app->make(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class),
-                $app->make(NumberExpansionServiceInterface::class),
-                $app->make(ChannelWeightServiceInterface::class),
-                $app->make(WalletServiceInterface::class)
-            );
-        });
+        $this->app->singleton(AddToCartUseCase::class, fn ($app): AddToCartUseCase => new AddToCartUseCase(
+            $app->make(CartRepositoryInterface::class),
+            $app->make(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class),
+            $app->make(NumberExpansionServiceInterface::class),
+            $app->make(ChannelWeightServiceInterface::class),
+            $app->make(WalletServiceInterface::class)
+        ));
 
-        $this->app->singleton(SubmitCartUseCase::class, function ($app) {
-            return new SubmitCartUseCase(
-                $app->make(CartRepositoryInterface::class),
-                $app->make(OrderRepositoryInterface::class),
-                $app->make(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class),
-                $app->make(WalletServiceInterface::class)
-            );
-        });
+        $this->app->singleton(SubmitCartUseCase::class, fn ($app): SubmitCartUseCase => new SubmitCartUseCase(
+            $app->make(CartRepositoryInterface::class),
+            $app->make(OrderRepositoryInterface::class),
+            $app->make(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class),
+            $app->make(WalletServiceInterface::class)
+        ));
     }
 
     /**

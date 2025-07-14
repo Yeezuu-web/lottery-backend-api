@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Order;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class AddToCartRequest extends FormRequest
+final class AddToCartRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -52,11 +54,11 @@ class AddToCartRequest extends FormRequest
                 'required',
                 'string',
                 'regex:/^[0-9]+$/',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail): void {
                     $type = $this->input('type');
-                    if ($type === '2D' && strlen($value) !== 2) {
+                    if ($type === '2D' && mb_strlen($value) !== 2) {
                         $fail('The number must be 2 digits for 2D betting.');
-                    } elseif ($type === '3D' && strlen($value) !== 3) {
+                    } elseif ($type === '3D' && mb_strlen($value) !== 3) {
                         $fail('The number must be 3 digits for 3D betting.');
                     }
                 },

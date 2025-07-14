@@ -1,16 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\ValueObjects;
 
 use App\Shared\Exceptions\ValidationException;
+use Stringable;
 
-final class Money
+final readonly class Money implements Stringable
 {
     private function __construct(
         private float $amount,
         private string $currency
     ) {
         $this->validate();
+    }
+
+    public function __toString(): string
+    {
+        return $this->toString();
     }
 
     public static function fromAmount(float $amount, string $currency = 'KHR'): self
@@ -33,14 +41,14 @@ final class Money
         return $this->currency;
     }
 
-    public function add(Money $other): self
+    public function add(self $other): self
     {
         $this->ensureSameCurrency($other);
 
         return new self($this->amount + $other->amount, $this->currency);
     }
 
-    public function subtract(Money $other): self
+    public function subtract(self $other): self
     {
         $this->ensureSameCurrency($other);
 
@@ -61,35 +69,35 @@ final class Money
         return new self($this->amount / $divisor, $this->currency);
     }
 
-    public function isGreaterThan(Money $other): bool
+    public function isGreaterThan(self $other): bool
     {
         $this->ensureSameCurrency($other);
 
         return $this->amount > $other->amount;
     }
 
-    public function isGreaterThanOrEqual(Money $other): bool
+    public function isGreaterThanOrEqual(self $other): bool
     {
         $this->ensureSameCurrency($other);
 
         return $this->amount >= $other->amount;
     }
 
-    public function isLessThan(Money $other): bool
+    public function isLessThan(self $other): bool
     {
         $this->ensureSameCurrency($other);
 
         return $this->amount < $other->amount;
     }
 
-    public function isLessThanOrEqual(Money $other): bool
+    public function isLessThanOrEqual(self $other): bool
     {
         $this->ensureSameCurrency($other);
 
         return $this->amount <= $other->amount;
     }
 
-    public function equals(Money $other): bool
+    public function equals(self $other): bool
     {
         return $this->amount === $other->amount && $this->currency === $other->currency;
     }
@@ -114,36 +122,7 @@ final class Money
         return number_format($this->amount, 2).' '.$this->currency;
     }
 
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    private function ensureSameCurrency(Money $other): void
-    {
-        if ($this->currency !== $other->currency) {
-            throw new ValidationException(
-                "Cannot operate on different currencies: {$this->currency} and {$other->currency}"
-            );
-        }
-    }
-
-    private function validate(): void
-    {
-        if (empty($this->currency)) {
-            throw new ValidationException('Currency cannot be empty');
-        }
-
-        if (strlen($this->currency) !== 3) {
-            throw new ValidationException('Currency must be a 3-character code');
-        }
-
-        if (! is_numeric($this->amount)) {
-            throw new ValidationException('Amount must be numeric');
-        }
-    }
-
-    public function isSameCurrency(Money $other): bool
+    public function isSameCurrency(self $other): bool
     {
         return $this->currency === $other->currency;
     }
@@ -154,5 +133,29 @@ final class Money
             'amount' => $this->amount,
             'currency' => $this->currency,
         ];
+    }
+
+    private function ensureSameCurrency(self $other): void
+    {
+        if ($this->currency !== $other->currency) {
+            throw new ValidationException(
+                sprintf('Cannot operate on different currencies: %s and %s', $this->currency, $other->currency)
+            );
+        }
+    }
+
+    private function validate(): void
+    {
+        if ($this->currency === '' || $this->currency === '0') {
+            throw new ValidationException('Currency cannot be empty');
+        }
+
+        if (mb_strlen($this->currency) !== 3) {
+            throw new ValidationException('Currency must be a 3-character code');
+        }
+
+        if (! is_numeric($this->amount)) {
+            throw new ValidationException('Amount must be numeric');
+        }
     }
 }

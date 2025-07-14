@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Wallet\Services;
 
 use App\Application\Wallet\Commands\CreateWalletCommand;
@@ -12,23 +14,22 @@ use App\Application\Wallet\Responses\WalletOperationResponse;
 use App\Application\Wallet\UseCases\CreateWalletUseCase;
 use App\Application\Wallet\UseCases\CreditWalletUseCase;
 use App\Application\Wallet\UseCases\DebitWalletUseCase;
-use App\Application\Wallet\UseCases\GetWalletUseCase;
 use App\Domain\Wallet\Exceptions\TransactionException;
 use App\Domain\Wallet\Exceptions\WalletException;
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Domain\Wallet\ValueObjects\TransactionType;
 use App\Domain\Wallet\ValueObjects\WalletType;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-final class WalletService
+final readonly class WalletService
 {
     public function __construct(
-        private readonly WalletRepositoryInterface $walletRepository,
-        private readonly TransactionRepositoryInterface $transactionRepository,
-        private readonly CreateWalletUseCase $createWalletUseCase,
-        private readonly CreditWalletUseCase $creditWalletUseCase,
-        private readonly GetWalletUseCase $getWalletUseCase
+        private WalletRepositoryInterface $walletRepository,
+        private TransactionRepositoryInterface $transactionRepository,
+        private CreateWalletUseCase $createWalletUseCase,
+        private CreditWalletUseCase $creditWalletUseCase
     ) {}
 
     /**
@@ -37,7 +38,7 @@ final class WalletService
     public function initializeWalletsForOwner(int $ownerId, string $currency = 'KHR'): WalletOperationResponse
     {
         try {
-            return DB::transaction(function () use ($ownerId, $currency) {
+            return DB::transaction(function () use ($ownerId, $currency): WalletOperationResponse {
                 $wallets = [];
                 $errors = [];
 
@@ -83,7 +84,7 @@ final class WalletService
                     $errors['bonus'] = $bonusWalletResult->errors;
                 }
 
-                if (! empty($errors)) {
+                if ($errors !== []) {
                     throw new WalletException('Failed to initialize some wallets: '.json_encode($errors));
                 }
 
@@ -98,16 +99,16 @@ final class WalletService
                     data: $wallets
                 );
             });
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to initialize wallets', [
                 'owner_id' => $ownerId,
                 'currency' => $currency,
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
 
             return WalletOperationResponse::failure(
                 message: 'Failed to initialize wallets',
-                errors: ['system' => $e->getMessage()]
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -118,15 +119,15 @@ final class WalletService
     public function transferFunds(TransferFundsCommand $command): WalletOperationResponse
     {
         try {
-            return DB::transaction(function () use ($command) {
+            return DB::transaction(function () use ($command): WalletOperationResponse {
                 // Get source and destination wallets
                 $fromWallet = $this->walletRepository->findById($command->fromWalletId);
-                if (! $fromWallet) {
+                if (! $fromWallet instanceof \App\Domain\Wallet\Models\Wallet) {
                     throw WalletException::notFound($command->fromWalletId);
                 }
 
                 $toWallet = $this->walletRepository->findById($command->toWalletId);
-                if (! $toWallet) {
+                if (! $toWallet instanceof \App\Domain\Wallet\Models\Wallet) {
                     throw WalletException::notFound($command->toWalletId);
                 }
 
@@ -223,7 +224,7 @@ final class WalletService
                 message: $e->getMessage(),
                 errors: ['transfer' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Unexpected error during transfer', [
                 'from_wallet_id' => $command->fromWalletId,
                 'to_wallet_id' => $command->toWalletId,
@@ -278,15 +279,15 @@ final class WalletService
                 message: 'Wallet summary retrieved successfully',
                 data: $summary
             );
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to get wallet summary', [
                 'owner_id' => $ownerId,
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
 
             return WalletOperationResponse::failure(
                 message: 'Failed to retrieve wallet summary',
-                errors: ['system' => $e->getMessage()]
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -300,7 +301,7 @@ final class WalletService
             // Try to find existing wallet
             $existingWallet = $this->walletRepository->findByOwnerIdAndType($ownerId, $walletType);
 
-            if ($existingWallet) {
+            if ($existingWallet instanceof \App\Domain\Wallet\Models\Wallet) {
                 return WalletOperationResponse::success(
                     message: 'Wallet found',
                     data: $existingWallet->toArray()
@@ -315,17 +316,17 @@ final class WalletService
             );
 
             return $this->createWalletUseCase->execute($createCommand);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to get or create wallet', [
                 'owner_id' => $ownerId,
                 'wallet_type' => $walletType->value,
                 'currency' => $currency,
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
 
             return WalletOperationResponse::failure(
                 message: 'Failed to get or create wallet',
-                errors: ['system' => $e->getMessage()]
+                errors: ['system' => $exception->getMessage()]
             );
         }
     }
@@ -341,7 +342,7 @@ final class WalletService
         array $metadata = []
     ): WalletOperationResponse {
         try {
-            return DB::transaction(function () use ($fromAgentId, $toAgentId, $commissionAmount, $reference, $metadata) {
+            return DB::transaction(function () use ($fromAgentId, $toAgentId, $commissionAmount, $reference, $metadata): WalletOperationResponse {
                 // Get or create commission wallets
                 $fromWalletResult = $this->getOrCreateWallet($fromAgentId, WalletType::COMMISSION, $commissionAmount->currency());
                 if (! $fromWalletResult->success) {
@@ -372,18 +373,18 @@ final class WalletService
 
                 return $this->transferFunds($transferCommand);
             });
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Commission payment failed', [
                 'from_agent_id' => $fromAgentId,
                 'to_agent_id' => $toAgentId,
                 'amount' => $commissionAmount->toArray(),
                 'reference' => $reference,
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
 
             return WalletOperationResponse::failure(
                 message: 'Commission payment failed',
-                errors: ['commission' => $e->getMessage()]
+                errors: ['commission' => $exception->getMessage()]
             );
         }
     }

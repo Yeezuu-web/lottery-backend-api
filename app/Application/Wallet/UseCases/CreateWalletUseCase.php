@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\UseCases;
 
 use App\Application\Wallet\Commands\CreateWalletCommand;
@@ -9,12 +11,13 @@ use App\Application\Wallet\Responses\WalletResponse;
 use App\Domain\Wallet\Events\WalletCreated;
 use App\Domain\Wallet\Exceptions\WalletException;
 use App\Domain\Wallet\Models\Wallet;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
-final class CreateWalletUseCase
+final readonly class CreateWalletUseCase
 {
     public function __construct(
-        private readonly WalletRepositoryInterface $walletRepository
+        private WalletRepositoryInterface $walletRepository
     ) {}
 
     public function execute(CreateWalletCommand $command): WalletOperationResponse
@@ -63,7 +66,7 @@ final class CreateWalletUseCase
                 message: $e->getMessage(),
                 errors: ['wallet' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Unexpected error during wallet creation', [
                 'owner_id' => $command->ownerId,
                 'wallet_type' => $command->walletType->value,

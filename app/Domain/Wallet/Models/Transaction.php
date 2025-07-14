@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Models;
 
 use App\Domain\Wallet\Exceptions\TransactionException;
@@ -8,22 +10,22 @@ use App\Domain\Wallet\ValueObjects\TransactionStatus;
 use App\Domain\Wallet\ValueObjects\TransactionType;
 use Carbon\Carbon;
 
-final class Transaction
+final readonly class Transaction
 {
     public function __construct(
-        private readonly int $id,
-        private readonly int $walletId,
-        private readonly TransactionType $type,
-        private readonly Money $amount,
-        private readonly Money $balanceAfter,
-        private readonly string $reference,
-        private readonly string $description,
-        private readonly TransactionStatus $status,
-        private readonly ?array $metadata,
-        private readonly ?int $relatedTransactionId,
-        private readonly ?int $orderId,
-        private readonly Carbon $createdAt,
-        private readonly Carbon $updatedAt
+        private int $id,
+        private int $walletId,
+        private TransactionType $type,
+        private Money $amount,
+        private Money $balanceAfter,
+        private string $reference,
+        private string $description,
+        private TransactionStatus $status,
+        private ?array $metadata,
+        private ?int $relatedTransactionId,
+        private ?int $orderId,
+        private Carbon $createdAt,
+        private Carbon $updatedAt
     ) {
         $this->validateTransaction();
     }
@@ -257,7 +259,7 @@ final class Transaction
             throw TransactionException::negativeBalanceAfter($this->id);
         }
 
-        if (empty($this->reference)) {
+        if ($this->reference === '' || $this->reference === '0') {
             throw TransactionException::emptyReference($this->id);
         }
     }

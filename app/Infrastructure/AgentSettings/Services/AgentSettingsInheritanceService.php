@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\AgentSettings\Services;
 
+use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
+use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
+use App\Domain\AgentSettings\Models\AgentSettings;
+use App\Domain\AgentSettings\ValueObjects\CommissionSharingSettings;
+use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Domain\AgentSettings\Models\AgentSettings;
-use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
-use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
-use App\Domain\AgentSettings\ValueObjects\CommissionSharingSettings;
-use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
 
-final class AgentSettingsInheritanceService
+final readonly class AgentSettingsInheritanceService
 {
     private const MAX_INHERITANCE_DEPTH = 10;
 
     public function __construct(
-        private readonly AgentSettingsRepositoryInterface $repository
+        private AgentSettingsRepositoryInterface $repository
     ) {}
 
     /**
@@ -25,7 +27,7 @@ final class AgentSettingsInheritanceService
     {
         $agentSettings = $this->repository->findByAgentId($agentId);
 
-        if (! $agentSettings) {
+        if (! $agentSettings instanceof AgentSettings) {
             throw AgentSettingsException::notFound($agentId);
         }
 
@@ -54,7 +56,7 @@ final class AgentSettingsInheritanceService
         }
 
         // If no parent has custom settings, use default
-        if (! $inheritedProfile) {
+        if (! $inheritedProfile instanceof PayoutProfile) {
             $inheritedProfile = PayoutProfile::default();
             $inheritedSettings = CommissionSharingSettings::default();
         }
@@ -103,7 +105,7 @@ final class AgentSettingsInheritanceService
 
             $chain[] = $parentId;
             $currentId = $parentId;
-            $depth++;
+            ++$depth;
         }
 
         if ($depth >= self::MAX_INHERITANCE_DEPTH) {
@@ -111,6 +113,46 @@ final class AgentSettingsInheritanceService
         }
 
         return $chain;
+    }
+
+    /**
+     * Batch compute effective settings for multiple agents
+     */
+    public function batchComputeEffectiveSettings(array $agentIds): array
+    {
+        $results = [];
+
+        foreach ($agentIds as $agentId) {
+            try {
+                $results[$agentId] = $this->computeEffectiveSettings($agentId);
+            } catch (AgentSettingsException $e) {
+                // Log error but continue with other agents
+                Log::warning(sprintf('Failed to compute settings for agent %s: ', $agentId).$e->getMessage());
+                $results[$agentId] = null;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Refresh expired cache for all agents
+     */
+    public function refreshExpiredCaches(): int
+    {
+        $expiredSettings = $this->repository->findWithExpiredCache();
+        $refreshedCount = 0;
+
+        foreach ($expiredSettings as $settings) {
+            try {
+                $this->computeEffectiveSettings($settings->getAgentId());
+                ++$refreshedCount;
+            } catch (AgentSettingsException $e) {
+                Log::warning(sprintf('Failed to refresh cache for agent %s: ', $settings->getAgentId()).$e->getMessage());
+            }
+        }
+
+        return $refreshedCount;
     }
 
     /**
@@ -168,7 +210,7 @@ final class AgentSettingsInheritanceService
         return new AgentSettings(
             agentId: $agentSettings->getAgentId(),
             payoutProfile: $agentSettings->getPayoutProfile(),
-            payoutProfileSourceAgentId: $agentSettings->getPayoutProfile() ? $agentSettings->getAgentId() : null,
+            payoutProfileSourceAgentId: $agentSettings->getPayoutProfile() instanceof PayoutProfile ? $agentSettings->getAgentId() : null,
             hasCustomPayoutProfile: $agentSettings->hasCustomPayoutProfile(),
             commissionSharingSettings: $agentSettings->getCommissionSharingSettings(),
             effectivePayoutProfile: $effectiveProfile,
@@ -182,45 +224,5 @@ final class AgentSettingsInheritanceService
             autoSettlement: $agentSettings->getAutoSettlement(),
             isActive: $agentSettings->isActive()
         );
-    }
-
-    /**
-     * Batch compute effective settings for multiple agents
-     */
-    public function batchComputeEffectiveSettings(array $agentIds): array
-    {
-        $results = [];
-
-        foreach ($agentIds as $agentId) {
-            try {
-                $results[$agentId] = $this->computeEffectiveSettings($agentId);
-            } catch (AgentSettingsException $e) {
-                // Log error but continue with other agents
-                Log::warning("Failed to compute settings for agent {$agentId}: ".$e->getMessage());
-                $results[$agentId] = null;
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Refresh expired cache for all agents
-     */
-    public function refreshExpiredCaches(): int
-    {
-        $expiredSettings = $this->repository->findWithExpiredCache();
-        $refreshedCount = 0;
-
-        foreach ($expiredSettings as $settings) {
-            try {
-                $this->computeEffectiveSettings($settings->getAgentId());
-                $refreshedCount++;
-            } catch (AgentSettingsException $e) {
-                Log::warning("Failed to refresh cache for agent {$settings->getAgentId()}: ".$e->getMessage());
-            }
-        }
-
-        return $refreshedCount;
     }
 }

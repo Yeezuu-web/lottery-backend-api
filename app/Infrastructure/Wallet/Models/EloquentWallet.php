@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Wallet\Models;
 
 use App\Infrastructure\Agent\Models\EloquentAgent;
@@ -8,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class EloquentWallet extends Model
+final class EloquentWallet extends Model
 {
     use HasFactory;
 
@@ -146,6 +148,6 @@ class EloquentWallet extends Model
      */
     public function getDisplayNameAttribute(): string
     {
-        return "{$this->wallet_type} Wallet - {$this->currency}";
+        return sprintf('%s Wallet - %s', $this->wallet_type, $this->currency);
     }
 }

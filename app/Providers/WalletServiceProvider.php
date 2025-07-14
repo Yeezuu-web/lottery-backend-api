@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Application\Wallet\Contracts\TransactionRepositoryInterface;
@@ -16,7 +18,7 @@ use App\Infrastructure\Wallet\Repositories\WalletRepository;
 use App\Infrastructure\Wallet\Services\WalletService;
 use Illuminate\Support\ServiceProvider;
 
-class WalletServiceProvider extends ServiceProvider
+final class WalletServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
@@ -35,43 +37,33 @@ class WalletServiceProvider extends ServiceProvider
         );
 
         // Register Use Cases
-        $this->app->singleton(CreateWalletUseCase::class, function ($app) {
-            return new CreateWalletUseCase(
-                $app->make(WalletRepositoryInterface::class)
-            );
-        });
+        $this->app->singleton(CreateWalletUseCase::class, fn ($app): CreateWalletUseCase => new CreateWalletUseCase(
+            $app->make(WalletRepositoryInterface::class)
+        ));
 
-        $this->app->singleton(CreditWalletUseCase::class, function ($app) {
-            return new CreditWalletUseCase(
-                $app->make(WalletRepositoryInterface::class),
-                $app->make(TransactionRepositoryInterface::class)
-            );
-        });
+        $this->app->singleton(CreditWalletUseCase::class, fn ($app): CreditWalletUseCase => new CreditWalletUseCase(
+            $app->make(WalletRepositoryInterface::class),
+            $app->make(TransactionRepositoryInterface::class)
+        ));
 
-        $this->app->singleton(DebitWalletUseCase::class, function ($app) {
-            return new DebitWalletUseCase(
-                $app->make(WalletRepositoryInterface::class),
-                $app->make(TransactionRepositoryInterface::class)
-            );
-        });
+        $this->app->singleton(DebitWalletUseCase::class, fn ($app): DebitWalletUseCase => new DebitWalletUseCase(
+            $app->make(WalletRepositoryInterface::class),
+            $app->make(TransactionRepositoryInterface::class)
+        ));
 
-        $this->app->singleton(GetWalletUseCase::class, function ($app) {
-            return new GetWalletUseCase(
-                $app->make(WalletRepositoryInterface::class),
-                $app->make(TransactionRepositoryInterface::class)
-            );
-        });
+        $this->app->singleton(GetWalletUseCase::class, fn ($app): GetWalletUseCase => new GetWalletUseCase(
+            $app->make(WalletRepositoryInterface::class),
+            $app->make(TransactionRepositoryInterface::class)
+        ));
 
         // Register Wallet Service
-        $this->app->singleton(WalletService::class, function ($app) {
-            return new WalletService(
-                $app->make(WalletRepositoryInterface::class),
-                $app->make(TransactionRepositoryInterface::class),
-                $app->make(CreateWalletUseCase::class),
-                $app->make(CreditWalletUseCase::class),
-                $app->make(GetWalletUseCase::class)
-            );
-        });
+        $this->app->singleton(WalletService::class, fn ($app): WalletService => new WalletService(
+            $app->make(WalletRepositoryInterface::class),
+            $app->make(TransactionRepositoryInterface::class),
+            $app->make(CreateWalletUseCase::class),
+            $app->make(CreditWalletUseCase::class),
+            $app->make(GetWalletUseCase::class)
+        ));
     }
 
     /**

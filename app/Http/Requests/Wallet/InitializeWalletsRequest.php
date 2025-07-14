@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Wallet;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class InitializeWalletsRequest extends FormRequest
+final class InitializeWalletsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -30,13 +32,6 @@ class InitializeWalletsRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'currency' => $this->currency ?? 'KHR',
-        ]);
-    }
-
     public function getOwnerId(): int
     {
         return $this->input('owner_id');
@@ -45,5 +40,12 @@ class InitializeWalletsRequest extends FormRequest
     public function getCurrency(): string
     {
         return $this->input('currency', 'KHR');
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'currency' => $this->currency ?? 'KHR',
+        ]);
     }
 }

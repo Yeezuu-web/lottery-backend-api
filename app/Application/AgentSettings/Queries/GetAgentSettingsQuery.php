@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Queries;
 
-final class GetAgentSettingsQuery
+final readonly class GetAgentSettingsQuery
 {
     public function __construct(
-        public readonly int $agentId,
-        public readonly bool $includeEffectiveSettings = true,
-        public readonly bool $refreshCache = false
+        public int $agentId,
+        public bool $includeEffectiveSettings = true,
+        public bool $refreshCache = false
     ) {}
 
     public function toArray(): array

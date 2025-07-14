@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Order\Services;
 
 use App\Application\Order\Contracts\NumberExpansionServiceInterface;
@@ -19,46 +21,35 @@ final class NumberExpansionService implements NumberExpansionServiceInterface
     public function getExpansionCount(string $number, string $option): int
     {
         $expanded = $this->expandNumbers($number, $option);
+
         return count($expanded);
     }
 
     public function expandNumbers(string $number, string $option): array
     {
-        switch ($option) {
-            case 'none':
-                return [$number];
-
-            case 'X':
-                return $this->expandCross($number);
-
-            case '\\':
-                return $this->expandBackSlash($number);
-
-            case '>':
-                return $this->expandGreater($number);
-
-            case '\\|':
-                return $this->expandBackSlashPipe($number);
-
-            case '>|':
-                return $this->expandGreaterPipe($number);
-
-            default:
-                return [$number];
-        }
+        return match ($option) {
+            'none' => [$number],
+            'X' => $this->expandCross($number),
+            '\\' => $this->expandBackSlash($number),
+            '>' => $this->expandGreater($number),
+            '\\|' => $this->expandBackSlashPipe($number),
+            '>|' => $this->expandGreaterPipe($number),
+            default => [$number],
+        };
     }
 
     private function expandCross(string $number): array
     {
         // Cross expansion: for 2D number like "21", returns ["21", "12"]
-        if (strlen($number) === 2) {
+        if (mb_strlen($number) === 2) {
             $reversed = strrev($number);
+
             return $number === $reversed ? [$number] : [$number, $reversed];
         }
 
         // For 3D, more complex cross expansion
-        if (strlen($number) === 3) {
-            $digits = str_split($number);
+        if (mb_strlen($number) === 3) {
+            $digits = mb_str_split($number);
             $expanded = [];
 
             // Generate all unique permutations
@@ -77,12 +68,12 @@ final class NumberExpansionService implements NumberExpansionServiceInterface
     private function expandBackSlash(string $number): array
     {
         // Back slash expansion: for number like "21", returns numbers ending with 1
-        if (strlen($number) === 2) {
-            $lastDigit = substr($number, -1);
+        if (mb_strlen($number) === 2) {
+            $lastDigit = mb_substr($number, -1);
             $expanded = [];
 
-            for ($i = 0; $i <= 9; $i++) {
-                $expanded[] = $i . $lastDigit;
+            for ($i = 0; $i <= 9; ++$i) {
+                $expanded[] = $i.$lastDigit;
             }
 
             return $expanded;
@@ -94,12 +85,12 @@ final class NumberExpansionService implements NumberExpansionServiceInterface
     private function expandGreater(string $number): array
     {
         // Greater expansion: for number like "21", returns numbers starting with 2
-        if (strlen($number) === 2) {
-            $firstDigit = substr($number, 0, 1);
+        if (mb_strlen($number) === 2) {
+            $firstDigit = mb_substr($number, 0, 1);
             $expanded = [];
 
-            for ($i = 0; $i <= 9; $i++) {
-                $expanded[] = $firstDigit . $i;
+            for ($i = 0; $i <= 9; ++$i) {
+                $expanded[] = $firstDigit.$i;
             }
 
             return $expanded;
@@ -133,8 +124,9 @@ final class NumberExpansionService implements NumberExpansionServiceInterface
         }
 
         $permutations = [];
+        $counter = count($elements);
 
-        for ($i = 0; $i < count($elements); $i++) {
+        for ($i = 0; $i < $counter; ++$i) {
             $current = $elements[$i];
             $remaining = array_merge(
                 array_slice($elements, 0, $i),

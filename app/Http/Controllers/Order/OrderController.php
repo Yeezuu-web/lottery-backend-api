@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Order;
 
 use App\Application\Order\Commands\AddToCartCommand;
@@ -10,11 +12,12 @@ use App\Application\Order\UseCases\SubmitCartUseCase;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\AddToCartRequest;
 use App\Http\Requests\Order\SubmitCartRequest;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class OrderController extends Controller
+final class OrderController extends Controller
 {
     public function __construct(
         private readonly AddToCartUseCase $addToCartUseCase,
@@ -43,13 +46,13 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Item added to cart successfully',
-                'data' => $result
+                'data' => $result,
             ], 201);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to add item to cart',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 400);
         }
     }
@@ -65,10 +68,10 @@ class OrderController extends Controller
             // Get cart items using the repository
             $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
 
-            if (!$agent) {
+            if (! $agent) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Agent not found'
+                    'message' => 'Agent not found',
                 ], 404);
             }
 
@@ -91,15 +94,15 @@ class OrderController extends Controller
                     'summary' => [
                         'total_items' => $totalItems,
                         'total_amount' => $totalAmount,
-                        'currency' => $currency
-                    ]
-                ]
+                        'currency' => $currency,
+                    ],
+                ],
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve cart',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -117,13 +120,13 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Cart submitted successfully',
-                'data' => $result
+                'data' => $result,
             ], 201);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to submit cart',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 400);
         }
     }
@@ -138,10 +141,10 @@ class OrderController extends Controller
 
             $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
 
-            if (!$agent) {
+            if (! $agent) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Agent not found'
+                    'message' => 'Agent not found',
                 ], 404);
             }
 
@@ -149,13 +152,13 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cart cleared successfully'
+                'message' => 'Cart cleared successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to clear cart',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -170,10 +173,10 @@ class OrderController extends Controller
 
             $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
 
-            if (!$agent) {
+            if (! $agent) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Agent not found'
+                    'message' => 'Agent not found',
                 ], 404);
             }
 
@@ -181,13 +184,13 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Item removed from cart successfully'
+                'message' => 'Item removed from cart successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to remove item from cart',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -202,10 +205,10 @@ class OrderController extends Controller
 
             $agent = app(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class)->findById($agentId);
 
-            if (!$agent) {
+            if (! $agent) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Agent not found'
+                    'message' => 'Agent not found',
                 ], 404);
             }
 
@@ -216,7 +219,7 @@ class OrderController extends Controller
                 'date_from' => $request->query('date_from'),
                 'date_to' => $request->query('date_to'),
                 'type' => $request->query('type'),
-                'period' => $request->query('period')
+                'period' => $request->query('period'),
             ];
 
             $limit = $request->query('limit', 20);
@@ -232,15 +235,15 @@ class OrderController extends Controller
                     'pagination' => [
                         'limit' => $limit,
                         'offset' => $offset,
-                        'total' => count($orders)
-                    ]
-                ]
+                        'total' => count($orders),
+                    ],
+                ],
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve order history',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -255,10 +258,10 @@ class OrderController extends Controller
 
             $order = $orderRepository->findById($orderId);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Order not found'
+                    'message' => 'Order not found',
                 ], 404);
             }
 
@@ -266,7 +269,7 @@ class OrderController extends Controller
             if ($order->agentId() !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized'
+                    'message' => 'Unauthorized',
                 ], 403);
             }
 
@@ -287,14 +290,14 @@ class OrderController extends Controller
                     'is_printed' => $order->isPrinted(),
                     'placed_at' => $order->placedAt()->format('Y-m-d H:i:s'),
                     'created_at' => $order->createdAt()->format('Y-m-d H:i:s'),
-                    'updated_at' => $order->updatedAt()->format('Y-m-d H:i:s')
-                ]
+                    'updated_at' => $order->updatedAt()->format('Y-m-d H:i:s'),
+                ],
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve order',
-                'error' => $e->getMessage()
+                'error' => $exception->getMessage(),
             ], 500);
         }
     }

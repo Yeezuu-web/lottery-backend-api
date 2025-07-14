@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Agent\ValueObjects;
 
 use App\Shared\Exceptions\ValidationException;
@@ -35,6 +37,16 @@ final class AgentType
         $this->value = $value;
     }
 
+    public static function member(): self
+    {
+        return new self(self::MEMBER);
+    }
+
+    public static function agent(): self
+    {
+        return new self(self::AGENT);
+    }
+
     public function value(): string
     {
         return $this->value;
@@ -61,16 +73,6 @@ final class AgentType
             self::AGENT => 5,
             self::MEMBER => 6,
         };
-    }
-
-    public static function member(): self
-    {
-        return new self(self::MEMBER);
-    }
-
-    public static function agent(): self
-    {
-        return new self(self::AGENT);
     }
 
     /**
@@ -180,7 +182,7 @@ final class AgentType
     /**
      * Check if can manage specific agent type
      */
-    public function canManage(AgentType $otherType): bool
+    public function canManage(self $otherType): bool
     {
         return $this->getHierarchyLevel() < $otherType->getHierarchyLevel();
     }

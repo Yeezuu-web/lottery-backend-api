@@ -1,21 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Shared\DTOs;
 
-final class OperationResponse
+final readonly class OperationResponse
 {
-    public readonly bool $success;
-
-    public readonly string $message;
-
-    public readonly array $data;
-
-    public function __construct(bool $success, string $message, array $data = [])
-    {
-        $this->success = $success;
-        $this->message = $message;
-        $this->data = $data;
-    }
+    public function __construct(public bool $success, public string $message, public array $data = []) {}
 
     public static function success(string $message, array $data = []): self
     {

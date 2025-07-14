@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Agent\Commands;
 
-final class GetAgentsCommand
+final readonly class GetAgentsCommand
 {
     public function __construct(
-        private readonly int $viewerId,
-        private readonly ?int $targetAgentId = null,
-        private readonly ?string $agentType = null,
-        private readonly ?bool $directOnly = true,
-        private readonly ?int $page = 1,
-        private readonly ?int $perPage = 20
+        private int $viewerId,
+        private ?int $targetAgentId = null,
+        private ?string $agentType = null,
+        private ?bool $directOnly = true,
+        private ?int $page = 1,
+        private ?int $perPage = 20
     ) {}
 
     public function getViewerId(): int

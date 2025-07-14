@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\AgentSettings\AgentSettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('agent-settings')->group(function () {
+Route::prefix('agent-settings')->group(function (): void {
 
     // Get agent settings
     Route::get('/{agentId}', [AgentSettingsController::class, 'show'])

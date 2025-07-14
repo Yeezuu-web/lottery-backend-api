@@ -1,17 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Agent\Responses;
 
-final class AgentListResponse
+final readonly class AgentListResponse
 {
     public function __construct(
-        private readonly array $agents,
-        private readonly int $total,
-        private readonly int $page,
-        private readonly int $perPage,
-        private readonly int $totalPages,
-        private readonly array $metadata = []
+        private array $agents,
+        private int $total,
+        private int $page,
+        private int $perPage,
+        private int $totalPages,
+        private array $metadata = []
     ) {}
+
+    public static function create(
+        array $agents,
+        int $total,
+        int $page,
+        int $perPage,
+        array $metadata = []
+    ): self {
+        $totalPages = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
+
+        return new self(
+            $agents,
+            $total,
+            $page,
+            $perPage,
+            $totalPages,
+            $metadata
+        );
+    }
 
     public function getAgents(): array
     {
@@ -55,24 +76,5 @@ final class AgentListResponse
             ],
             'metadata' => $this->metadata,
         ];
-    }
-
-    public static function create(
-        array $agents,
-        int $total,
-        int $page,
-        int $perPage,
-        array $metadata = []
-    ): self {
-        $totalPages = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
-
-        return new self(
-            $agents,
-            $total,
-            $page,
-            $perPage,
-            $totalPages,
-            $metadata
-        );
     }
 }

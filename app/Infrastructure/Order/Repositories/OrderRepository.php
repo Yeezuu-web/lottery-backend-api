@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Order\Repositories;
 
 use App\Application\Order\Contracts\OrderRepositoryInterface;
@@ -10,10 +12,10 @@ use App\Domain\Order\ValueObjects\GroupId;
 use App\Domain\Order\ValueObjects\OrderNumber;
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Infrastructure\Order\Models\EloquentOrder;
-use DateTime;
+use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 
-final class OrderRepository implements OrderRepositoryInterface
+final readonly class OrderRepository implements OrderRepositoryInterface
 {
     public function __construct(
         private EloquentOrder $model
@@ -74,7 +76,7 @@ final class OrderRepository implements OrderRepositoryInterface
             ->orderBy('placed_at', 'desc')
             ->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
     public function findByAgent(Agent $agent, array $filters = [], int $limit = 10, int $offset = 0): array
@@ -84,29 +86,29 @@ final class OrderRepository implements OrderRepositoryInterface
             ->orderBy('placed_at', 'desc');
 
         // Apply filters
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('placed_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('placed_at', '<=', $filters['date_to']);
         }
 
-        if (!empty($filters['type'])) {
+        if (! empty($filters['type'])) {
             $query->whereJsonContains('bet_data->type', $filters['type']);
         }
 
-        if (!empty($filters['period'])) {
+        if (! empty($filters['period'])) {
             $query->whereJsonContains('bet_data->period', $filters['period']);
         }
 
         $eloquentOrders = $query->limit($limit)->offset($offset)->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
     public function findByStatus(string $status, int $limit = 10, int $offset = 0): array
@@ -118,10 +120,10 @@ final class OrderRepository implements OrderRepositoryInterface
             ->offset($offset)
             ->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
-    public function findByDateRange(\DateTime $startDate, \DateTime $endDate, int $limit = 10, int $offset = 0): array
+    public function findByDateRange(DateTimeImmutable $startDate, DateTimeImmutable $endDate, int $limit = 10, int $offset = 0): array
     {
         $eloquentOrders = $this->model
             ->whereDate('placed_at', '>=', $startDate->format('Y-m-d'))
@@ -131,7 +133,7 @@ final class OrderRepository implements OrderRepositoryInterface
             ->offset($offset)
             ->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
     public function countByAgent(Agent $agent, array $filters = []): int
@@ -139,23 +141,23 @@ final class OrderRepository implements OrderRepositoryInterface
         $query = $this->model->where('agent_id', $agent->id());
 
         // Apply filters
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('placed_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('placed_at', '<=', $filters['date_to']);
         }
 
-        if (!empty($filters['type'])) {
+        if (! empty($filters['type'])) {
             $query->whereJsonContains('bet_data->type', $filters['type']);
         }
 
-        if (!empty($filters['period'])) {
+        if (! empty($filters['period'])) {
             $query->whereJsonContains('bet_data->period', $filters['period']);
         }
 
@@ -176,7 +178,7 @@ final class OrderRepository implements OrderRepositoryInterface
             ->orderBy('placed_at', 'desc')
             ->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
     public function bulkUpdateStatus(array $orderIds, string $status): bool
@@ -185,7 +187,7 @@ final class OrderRepository implements OrderRepositoryInterface
             ->whereIn('id', $orderIds)
             ->update([
                 'status' => $status,
-                'updated_at' => new DateTime
+                'updated_at' => new DateTimeImmutable,
             ]);
 
         return $updated > 0;
@@ -197,13 +199,13 @@ final class OrderRepository implements OrderRepositoryInterface
             ->where('agent_id', $agentId)
             ->orderBy('placed_at', 'desc');
 
-        if ($status) {
+        if ($status !== null && $status !== '' && $status !== '0') {
             $query->where('status', $status);
         }
 
         $eloquentOrders = $query->limit($limit)->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
     public function findUnprintedByGroupId(GroupId $groupId): array
@@ -214,7 +216,7 @@ final class OrderRepository implements OrderRepositoryInterface
             ->orderBy('placed_at', 'desc')
             ->get();
 
-        return $eloquentOrders->map(fn ($order) => $this->toDomainModel($order))->toArray();
+        return $eloquentOrders->map(fn ($order): Order => $this->toDomainModel($order))->toArray();
     }
 
     public function markGroupAsPrinted(GroupId $groupId): void
@@ -224,14 +226,14 @@ final class OrderRepository implements OrderRepositoryInterface
             ->where('is_printed', false)
             ->update([
                 'is_printed' => true,
-                'printed_at' => new DateTime,
-                'updated_at' => new DateTime,
+                'printed_at' => new DateTimeImmutable,
+                'updated_at' => new DateTimeImmutable,
             ]);
     }
 
     public function delete(Order $order): bool
     {
-        if ($order->id()) {
+        if (! in_array($order->id(), [null, 0], true)) {
             return $this->model->destroy($order->id()) > 0;
         }
 
@@ -251,10 +253,10 @@ final class OrderRepository implements OrderRepositoryInterface
             totalAmount: Money::fromAmount($eloquentOrder->total_amount, $eloquentOrder->currency),
             status: $eloquentOrder->status,
             isPrinted: $eloquentOrder->is_printed,
-            printedAt: $eloquentOrder->printed_at ? new DateTime($eloquentOrder->printed_at) : null,
-            placedAt: new DateTime($eloquentOrder->placed_at),
-            createdAt: new DateTime($eloquentOrder->created_at),
-            updatedAt: new DateTime($eloquentOrder->updated_at)
+            printedAt: $eloquentOrder->printed_at ? new DateTimeImmutable($eloquentOrder->printed_at) : null,
+            placedAt: new DateTimeImmutable($eloquentOrder->placed_at),
+            createdAt: new DateTimeImmutable($eloquentOrder->created_at),
+            updatedAt: new DateTimeImmutable($eloquentOrder->updated_at)
         );
     }
 }

@@ -1,93 +1,95 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Exceptions;
 
 use App\Domain\Wallet\ValueObjects\Money;
 use Exception;
 
-class WalletException extends Exception
+final class WalletException extends Exception
 {
     public static function notFound(int $walletId): self
     {
-        return new self("Wallet with ID {$walletId} not found");
+        return new self(sprintf('Wallet with ID %d not found', $walletId));
     }
 
     public static function alreadyExists(int $ownerId, string $walletType): self
     {
-        return new self("Wallet of type {$walletType} already exists for owner {$ownerId}");
+        return new self(sprintf('Wallet of type %s already exists for owner %d', $walletType, $ownerId));
     }
 
     public static function inactive(int $walletId): self
     {
-        return new self("Wallet {$walletId} is inactive");
+        return new self(sprintf('Wallet %d is inactive', $walletId));
     }
 
     public static function insufficientFunds(int $walletId, Money $requested, Money $available): self
     {
         return new self(
-            "Insufficient funds in wallet {$walletId}. Requested: {$requested}, Available: {$available}"
+            sprintf('Insufficient funds in wallet %d. Requested: %s, Available: %s', $walletId, $requested, $available)
         );
     }
 
     public static function cannotCredit(int $walletId, Money $amount): self
     {
-        return new self("Cannot credit {$amount} to wallet {$walletId}");
+        return new self(sprintf('Cannot credit %s to wallet %d', $amount, $walletId));
     }
 
     public static function cannotDebit(int $walletId, Money $amount): self
     {
-        return new self("Cannot debit {$amount} from wallet {$walletId}");
+        return new self(sprintf('Cannot debit %s from wallet %d', $amount, $walletId));
     }
 
     public static function cannotLock(int $walletId, Money $amount): self
     {
-        return new self("Cannot lock {$amount} in wallet {$walletId}");
+        return new self(sprintf('Cannot lock %s in wallet %d', $amount, $walletId));
     }
 
     public static function cannotUnlock(int $walletId, Money $amount): self
     {
-        return new self("Cannot unlock {$amount} from wallet {$walletId}");
+        return new self(sprintf('Cannot unlock %s from wallet %d', $amount, $walletId));
     }
 
     public static function negativeBalance(int $walletId): self
     {
-        return new self("Wallet {$walletId} cannot have negative balance");
+        return new self(sprintf('Wallet %d cannot have negative balance', $walletId));
     }
 
     public static function negativeLockedBalance(int $walletId): self
     {
-        return new self("Wallet {$walletId} cannot have negative locked balance");
+        return new self(sprintf('Wallet %d cannot have negative locked balance', $walletId));
     }
 
     public static function lockedBalanceExceedsBalance(int $walletId): self
     {
-        return new self("Locked balance cannot exceed total balance in wallet {$walletId}");
+        return new self('Locked balance cannot exceed total balance in wallet '.$walletId);
     }
 
     public static function transferNotAllowed(string $fromType, string $toType): self
     {
-        return new self("Transfer from {$fromType} to {$toType} is not allowed");
+        return new self(sprintf('Transfer from %s to %s is not allowed', $fromType, $toType));
     }
 
     public static function currencyMismatch(string $fromCurrency, string $toCurrency): self
     {
-        return new self("Currency mismatch: cannot transfer from {$fromCurrency} to {$toCurrency}");
+        return new self(sprintf('Currency mismatch: cannot transfer from %s to %s', $fromCurrency, $toCurrency));
     }
 
     public static function operationNotAllowed(int $walletId, string $operation): self
     {
-        return new self("Operation {$operation} is not allowed on wallet {$walletId}");
+        return new self(sprintf('Operation %s is not allowed on wallet %d', $operation, $walletId));
     }
 
     public static function concurrentModification(int $walletId): self
     {
-        return new self("Wallet {$walletId} was modified by another process");
+        return new self(sprintf('Wallet %d was modified by another process', $walletId));
     }
 
     public static function invalidOwner(int $walletId, int $expectedOwnerId, int $actualOwnerId): self
     {
         return new self(
-            "Wallet {$walletId} owner mismatch. Expected: {$expectedOwnerId}, Actual: {$actualOwnerId}"
+            sprintf('Wallet %d owner mismatch. Expected: %d, Actual: %d', $walletId, $expectedOwnerId, $actualOwnerId)
         );
     }
 }

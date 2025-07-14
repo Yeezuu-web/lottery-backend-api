@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\AgentSettings;
 
 use App\Application\AgentSettings\Commands\CreateAgentSettingsCommand;
@@ -21,7 +23,7 @@ use App\Traits\HttpApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class AgentSettingsController extends Controller
+final class AgentSettingsController extends Controller
 {
     use HttpApiResponse;
 

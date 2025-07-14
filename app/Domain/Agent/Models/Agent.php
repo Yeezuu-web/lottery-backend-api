@@ -1,57 +1,96 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Agent\Models;
 
 use App\Domain\Agent\ValueObjects\AgentType;
 use App\Domain\Agent\ValueObjects\Username;
 use App\Shared\Exceptions\ValidationException;
+use DateTimeImmutable;
 
-final class Agent
+final readonly class Agent
 {
-    private readonly int $id;
+    private Username $username;
 
-    private readonly Username $username;
+    private AgentType $agentType;
 
-    private readonly AgentType $agentType;
-
-    private readonly ?int $uplineId;
-
-    private readonly string $name;
-
-    private readonly string $email;
-
-    private readonly bool $isActive;
-
-    private readonly ?\DateTimeImmutable $createdAt;
-
-    private readonly ?\DateTimeImmutable $updatedAt;
-
-    private readonly ?string $password;
+    private ?int $uplineId;
 
     public function __construct(
-        int $id,
+        private int $id,
         Username $username,
         AgentType $agentType,
+        ?int $uplineId,
+        private string $name,
+        private string $email,
+        private bool $isActive = true,
+        private ?DateTimeImmutable $createdAt = null,
+        private ?DateTimeImmutable $updatedAt = null,
+        private ?string $password = null
+    ) {
+        $this->validateAgentData($username, $agentType, $uplineId);
+        $this->username = $username;
+        $this->agentType = $agentType;
+        $this->uplineId = $uplineId;
+    }
+
+    /**
+     * Create a new agent instance
+     */
+    public static function create(
+        int $id,
+        string $username,
+        string $agentType,
         ?int $uplineId,
         string $name,
         string $email,
         bool $isActive = true,
-        ?\DateTimeImmutable $createdAt = null,
-        ?\DateTimeImmutable $updatedAt = null,
+        ?DateTimeImmutable $createdAt = null,
+        ?DateTimeImmutable $updatedAt = null,
         ?string $password = null
-    ) {
-        $this->validateAgentData($username, $agentType, $uplineId);
+    ): self {
+        return new self(
+            $id,
+            new Username($username),
+            new AgentType($agentType),
+            $uplineId,
+            $name,
+            $email,
+            $isActive,
+            $createdAt,
+            $updatedAt,
+            $password
+        );
+    }
 
-        $this->id = $id;
-        $this->username = $username;
-        $this->agentType = $agentType;
-        $this->uplineId = $uplineId;
-        $this->name = $name;
-        $this->email = $email;
-        $this->isActive = $isActive;
-        $this->createdAt = $createdAt;
-        $this->updatedAt = $updatedAt;
-        $this->password = $password;
+    public static function update(
+        int $id,
+        string $username,
+        string $agentType,
+        ?int $uplineId,
+        ?string $name,
+        ?string $email,
+        ?string $password,
+        ?bool $isActive = true,
+        ?string $createdAt = null,
+        ?string $updatedAt = null,
+    ): self {
+        $createdAt = $createdAt !== null && $createdAt !== '' && $createdAt !== '0' ? new DateTimeImmutable($createdAt) : null;
+        $updatedAt = $updatedAt !== null && $updatedAt !== '' && $updatedAt !== '0' ? new DateTimeImmutable($updatedAt) : null;
+
+        return new self(
+            $id,
+            new Username($username),
+            new AgentType($agentType),
+            $uplineId,
+            $name,
+            $email,
+            $isActive,
+            $createdAt,
+            $updatedAt,
+            $password,
+        );
     }
 
     public function id(): int
@@ -89,12 +128,12 @@ final class Agent
         return $this->isActive;
     }
 
-    public function createdAt(): ?\DateTimeImmutable
+    public function createdAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): ?\DateTimeImmutable
+    public function updatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }
@@ -107,7 +146,7 @@ final class Agent
     /**
      * Check if this agent can manage another agent
      */
-    public function canManage(Agent $otherAgent): bool
+    public function canManage(self $otherAgent): bool
     {
         // Must be higher in hierarchy
         if (! $this->agentType->canManage($otherAgent->agentType())) {
@@ -121,16 +160,16 @@ final class Agent
     /**
      * Check if this agent is in the hierarchy path of another agent
      */
-    public function isInHierarchyPath(Agent $otherAgent): bool
+    public function isInHierarchyPath(self $otherAgent): bool
     {
         // Check if other agent's username starts with this agent's username
-        return str_starts_with($otherAgent->username()->value(), $this->username()->value());
+        return str_starts_with($otherAgent->username()->value(), $this->username->value());
     }
 
     /**
      * Check if this agent is a direct child of another agent
      */
-    public function isDirectChildOf(Agent $parentAgent): bool
+    public function isDirectChildOf(self $parentAgent): bool
     {
         // Check by upline ID
         if ($this->uplineId !== $parentAgent->id()) {
@@ -232,65 +271,6 @@ final class Agent
     }
 
     /**
-     * Create a new agent instance
-     */
-    public static function create(
-        int $id,
-        string $username,
-        string $agentType,
-        ?int $uplineId,
-        string $name,
-        string $email,
-        bool $isActive = true,
-        ?\DateTimeImmutable $createdAt = null,
-        ?\DateTimeImmutable $updatedAt = null,
-        ?string $password = null
-    ): self {
-        return new self(
-            $id,
-            new Username($username),
-            new AgentType($agentType),
-            $uplineId,
-            $name,
-            $email,
-            $isActive,
-            $createdAt,
-            $updatedAt,
-            $password
-        );
-    }
-
-    public static function update(
-        int $id,
-        string $username,
-        string $agentType,
-        ?int $uplineId,
-        ?string $name,
-        ?string $email,
-        ?string $password,
-        ?bool $isActive = true,
-        ?string $createdAt = null,
-        ?string $updatedAt = null,
-        ?int $updatorId = null,
-    ): self {
-        $createdAt = $createdAt ? new \DateTimeImmutable($createdAt) : null;
-        $updatedAt = $updatedAt ? new \DateTimeImmutable($updatedAt) : null;
-
-        return new self(
-            $id,
-            new Username($username),
-            new AgentType($agentType),
-            $uplineId,
-            $name,
-            $email,
-            $isActive,
-            $createdAt,
-            $updatedAt,
-            $password,
-        );
-    }
-
-    /**
      * Validate agent data consistency
      */
     private function validateAgentData(Username $username, AgentType $agentType, ?int $uplineId): void
@@ -298,7 +278,7 @@ final class Agent
         // Validate username matches agent type
         if (! $username->isValidForAgentType($agentType)) {
             throw new ValidationException(
-                "Username '{$username->value()}' is not valid for agent type '{$agentType->value()}'"
+                sprintf("Username '%s' is not valid for agent type '%s'", $username->value(), $agentType->value())
             );
         }
 

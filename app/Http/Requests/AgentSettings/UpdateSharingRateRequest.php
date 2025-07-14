@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\AgentSettings;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateSharingRateRequest extends FormRequest
+final class UpdateSharingRateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -27,18 +29,18 @@ class UpdateSharingRateRequest extends FormRequest
         ];
     }
 
+    public function getSharingRate(): ?float
+    {
+        $rate = $this->input('sharing_rate');
+
+        return $rate !== null ? (float) $rate : null;
+    }
+
     protected function prepareForValidation(): void
     {
         // Convert empty strings to null for nullable fields
         $this->merge([
             'sharing_rate' => $this->sharing_rate === '' ? null : $this->sharing_rate,
         ]);
-    }
-
-    public function getSharingRate(): ?float
-    {
-        $rate = $this->input('sharing_rate');
-
-        return $rate !== null ? (float) $rate : null;
     }
 }

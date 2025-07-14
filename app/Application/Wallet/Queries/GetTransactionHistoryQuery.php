@@ -1,23 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\Queries;
 
 use App\Domain\Wallet\ValueObjects\TransactionStatus;
 use App\Domain\Wallet\ValueObjects\TransactionType;
 use Carbon\Carbon;
 
-final class GetTransactionHistoryQuery
+final readonly class GetTransactionHistoryQuery
 {
     public function __construct(
-        public readonly int $walletId,
-        public readonly ?TransactionType $transactionType = null,
-        public readonly ?TransactionStatus $status = null,
-        public readonly ?Carbon $fromDate = null,
-        public readonly ?Carbon $toDate = null,
-        public readonly int $page = 1,
-        public readonly int $perPage = 20,
-        public readonly string $sortBy = 'created_at',
-        public readonly string $sortDirection = 'desc'
+        public int $walletId,
+        public ?TransactionType $transactionType = null,
+        public ?TransactionStatus $status = null,
+        public ?Carbon $fromDate = null,
+        public ?Carbon $toDate = null,
+        public int $page = 1,
+        public int $perPage = 20,
+        public string $sortBy = 'created_at',
+        public string $sortDirection = 'desc'
     ) {}
 
     public function toArray(): array

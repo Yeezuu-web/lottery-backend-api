@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\AgentSettings\Models;
 
 use App\Infrastructure\Agent\Models\EloquentAgent;
@@ -7,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class EloquentAgentSettings extends Model
+final class EloquentAgentSettings extends Model
 {
     use HasFactory;
 
@@ -188,7 +190,7 @@ class EloquentAgentSettings extends Model
     public function getEffectivePayoutProfileAttribute($value)
     {
         if ($value) {
-            return json_decode($value, true);
+            return json_decode((string) $value, true);
         }
 
         // Fallback to custom payout profile if no effective profile
@@ -248,7 +250,7 @@ class EloquentAgentSettings extends Model
      */
     public function canBetOnNumber(string $number): bool
     {
-        return !$this->isNumberBlocked($number);
+        return ! $this->isNumberBlocked($number);
     }
 
     /**
@@ -258,7 +260,7 @@ class EloquentAgentSettings extends Model
     {
         $limits = $this->getBettingLimit($type);
 
-        if (!$limits) {
+        if ($limits === null || $limits === []) {
             return true; // No limits set
         }
 

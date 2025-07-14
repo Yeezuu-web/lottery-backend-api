@@ -1,77 +1,57 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Agent\Models;
 
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Shared\Exceptions\ValidationException;
-use DateTime;
+use DateTimeImmutable;
 
-final class AgentSettings
+final readonly class AgentSettings
 {
-    private readonly int $id;
+    private float $commissionRate;
 
-    private readonly int $agentId;
+    private float $maxPayoutRate;
 
-    private readonly float $commissionRate;
+    private ?array $blockedNumbers;
 
-    private readonly float $maxPayoutRate;
+    private ?array $allowedChannels;
 
-    private readonly ?array $payoutRates;
+    private ?array $allowedProvinces;
 
-    private readonly ?array $blockedNumbers;
+    private ?Money $dailyLimit;
 
-    private readonly ?array $bettingLimits;
+    private ?Money $monthlyLimit;
 
-    private readonly ?array $allowedChannels;
+    private ?int $maxBetsPerDraw;
 
-    private readonly ?array $allowedProvinces;
+    private DateTimeImmutable $createdAt;
 
-    private readonly ?array $operatingHours;
-
-    private readonly ?array $restrictedPeriods;
-
-    private readonly bool $canPlaceBets;
-
-    private readonly bool $canViewReports;
-
-    private readonly bool $canManageSubAgents;
-
-    private readonly bool $autoSettlement;
-
-    private readonly ?Money $dailyLimit;
-
-    private readonly ?Money $monthlyLimit;
-
-    private readonly ?int $maxBetsPerDraw;
-
-    private readonly ?array $customSettings;
-
-    private readonly DateTime $createdAt;
-
-    private readonly DateTime $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
     public function __construct(
-        int $id,
-        int $agentId,
+        private int $id,
+        private int $agentId,
         float $commissionRate = 0.00,
         float $maxPayoutRate = 0.00,
-        ?array $payoutRates = null,
+        private ?array $payoutRates = null,
         ?array $blockedNumbers = null,
-        ?array $bettingLimits = null,
+        private ?array $bettingLimits = null,
         ?array $allowedChannels = null,
         ?array $allowedProvinces = null,
-        ?array $operatingHours = null,
-        ?array $restrictedPeriods = null,
-        bool $canPlaceBets = true,
-        bool $canViewReports = true,
-        bool $canManageSubAgents = false,
-        bool $autoSettlement = false,
+        private ?array $operatingHours = null,
+        private ?array $restrictedPeriods = null,
+        private bool $canPlaceBets = true,
+        private bool $canViewReports = true,
+        private bool $canManageSubAgents = false,
+        private bool $autoSettlement = false,
         ?Money $dailyLimit = null,
         ?Money $monthlyLimit = null,
         ?int $maxBetsPerDraw = null,
-        ?array $customSettings = null,
-        ?DateTime $createdAt = null,
-        ?DateTime $updatedAt = null
+        private ?array $customSettings = null,
+        ?DateTimeImmutable $createdAt = null,
+        ?DateTimeImmutable $updatedAt = null
     ) {
         $this->validateCommissionRate($commissionRate);
         $this->validateMaxPayoutRate($maxPayoutRate);
@@ -80,28 +60,16 @@ final class AgentSettings
         $this->validateProvinces($allowedProvinces);
         $this->validateLimits($dailyLimit, $monthlyLimit);
         $this->validateMaxBetsPerDraw($maxBetsPerDraw);
-
-        $this->id = $id;
-        $this->agentId = $agentId;
         $this->commissionRate = $commissionRate;
         $this->maxPayoutRate = $maxPayoutRate;
-        $this->payoutRates = $payoutRates;
         $this->blockedNumbers = $blockedNumbers;
-        $this->bettingLimits = $bettingLimits;
         $this->allowedChannels = $allowedChannels;
         $this->allowedProvinces = $allowedProvinces;
-        $this->operatingHours = $operatingHours;
-        $this->restrictedPeriods = $restrictedPeriods;
-        $this->canPlaceBets = $canPlaceBets;
-        $this->canViewReports = $canViewReports;
-        $this->canManageSubAgents = $canManageSubAgents;
-        $this->autoSettlement = $autoSettlement;
         $this->dailyLimit = $dailyLimit;
         $this->monthlyLimit = $monthlyLimit;
         $this->maxBetsPerDraw = $maxBetsPerDraw;
-        $this->customSettings = $customSettings;
-        $this->createdAt = $createdAt ?? new DateTime;
-        $this->updatedAt = $updatedAt ?? new DateTime;
+        $this->createdAt = $createdAt ?? new DateTimeImmutable;
+        $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
     }
 
     public function id(): int
@@ -199,12 +167,12 @@ final class AgentSettings
         return $this->customSettings;
     }
 
-    public function createdAt(): DateTime
+    public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): DateTime
+    public function updatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
@@ -226,20 +194,28 @@ final class AgentSettings
 
     public function hasReachedDailyLimit(Money $currentDailySpent): bool
     {
-        if ($this->dailyLimit === null) {
+        if (! $this->dailyLimit instanceof Money) {
             return false;
         }
 
-        return $currentDailySpent->isGreaterThan($this->dailyLimit) || $currentDailySpent->equals($this->dailyLimit);
+        if ($currentDailySpent->isGreaterThan($this->dailyLimit)) {
+            return true;
+        }
+
+        return $currentDailySpent->equals($this->dailyLimit);
     }
 
     public function hasReachedMonthlyLimit(Money $currentMonthlySpent): bool
     {
-        if ($this->monthlyLimit === null) {
+        if (! $this->monthlyLimit instanceof Money) {
             return false;
         }
 
-        return $currentMonthlySpent->isGreaterThan($this->monthlyLimit) || $currentMonthlySpent->equals($this->monthlyLimit);
+        if ($currentMonthlySpent->isGreaterThan($this->monthlyLimit)) {
+            return true;
+        }
+
+        return $currentMonthlySpent->equals($this->monthlyLimit);
     }
 
     public function hasReachedMaxBetsPerDraw(int $currentBetsCount): bool
@@ -291,7 +267,7 @@ final class AgentSettings
             $this->maxBetsPerDraw,
             $this->customSettings,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -328,7 +304,7 @@ final class AgentSettings
             $this->maxBetsPerDraw,
             $this->customSettings,
             $this->createdAt,
-            new DateTime
+            new DateTimeImmutable
         );
     }
 
@@ -353,7 +329,7 @@ final class AgentSettings
         }
 
         foreach ($numbers as $number) {
-            if (! is_string($number) || ! preg_match('/^\d+$/', $number)) {
+            if (! is_string($number) || in_array(preg_match('/^\d+$/', $number), [0, false], true)) {
                 throw new ValidationException('Blocked numbers must be numeric strings');
             }
         }
@@ -389,10 +365,8 @@ final class AgentSettings
 
     private function validateLimits(?Money $dailyLimit, ?Money $monthlyLimit): void
     {
-        if ($dailyLimit !== null && $monthlyLimit !== null) {
-            if ($dailyLimit->isGreaterThan($monthlyLimit)) {
-                throw new ValidationException('Daily limit cannot be greater than monthly limit');
-            }
+        if ($dailyLimit instanceof Money && $monthlyLimit instanceof Money && $dailyLimit->isGreaterThan($monthlyLimit)) {
+            throw new ValidationException('Daily limit cannot be greater than monthly limit');
         }
     }
 

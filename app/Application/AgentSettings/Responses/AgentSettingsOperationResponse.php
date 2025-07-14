@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Responses;
 
 use JsonSerializable;
 
-final class AgentSettingsOperationResponse implements JsonSerializable
+final readonly class AgentSettingsOperationResponse implements JsonSerializable
 {
     public function __construct(
-        public readonly bool $success,
-        public readonly string $message,
-        public readonly ?AgentSettingsResponse $data = null,
-        public readonly ?array $errors = null
+        public bool $success,
+        public string $message,
+        public ?AgentSettingsResponse $data = null,
+        public ?array $errors = null
     ) {}
 
     public static function success(string $message, ?AgentSettingsResponse $data = null): self
@@ -38,7 +40,7 @@ final class AgentSettingsOperationResponse implements JsonSerializable
             'message' => $this->message,
         ];
 
-        if ($this->data !== null) {
+        if ($this->data instanceof AgentSettingsResponse) {
             $response['data'] = $this->data->toArray();
         }
 

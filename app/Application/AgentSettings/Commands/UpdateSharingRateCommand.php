@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Commands;
 
-final class UpdateSharingRateCommand
+final readonly class UpdateSharingRateCommand
 {
     public function __construct(
-        public readonly int $agentId,
-        public readonly ?float $sharingRate
+        public int $agentId,
+        public ?float $sharingRate
     ) {}
 
     public function toArray(): array

@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Auth\Services;
 
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\ValueObjects\JWTToken;
 use App\Domain\Auth\ValueObjects\TokenPair;
-use DateTime;
+use DateTimeImmutable;
 use Exception;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\SignatureInvalidException;
 
-final class JWTTokenService implements TokenServiceInterface
+final readonly class JWTTokenService implements TokenServiceInterface
 {
-    private readonly array $jwtConfig;
+    private array $jwtConfig;
 
     public function __construct()
     {
@@ -33,7 +35,7 @@ final class JWTTokenService implements TokenServiceInterface
     public function generateAccessToken(Agent $agent, string $audience): JWTToken
     {
         $config = $this->getAudienceConfig($audience);
-        $now = new DateTime;
+        $now = new DateTimeImmutable;
         $expiresAt = (clone $now)->modify('+'.$config['access_token_ttl'].' seconds');
 
         $payload = [
@@ -61,7 +63,7 @@ final class JWTTokenService implements TokenServiceInterface
     public function generateRefreshToken(Agent $agent, string $audience): JWTToken
     {
         $config = $this->getAudienceConfig($audience);
-        $now = new DateTime;
+        $now = new DateTimeImmutable;
         $expiresAt = (clone $now)->modify('+'.$config['refresh_token_ttl'].' seconds');
 
         $payload = [
@@ -97,27 +99,23 @@ final class JWTTokenService implements TokenServiceInterface
                 return null;
             }
 
-            $expiresAt = new DateTime('@'.$payload['exp']);
+            $expiresAt = new DateTimeImmutable('@'.$payload['exp']);
 
             return new JWTToken($token, $payload, $expiresAt);
 
-        } catch (ExpiredException $e) {
-            return null;
-        } catch (SignatureInvalidException $e) {
-            return null;
-        } catch (Exception $e) {
+        } catch (ExpiredException|SignatureInvalidException|Exception) {
             return null;
         }
     }
 
     public function isTokenValid(string $token, string $audience): bool
     {
-        return $this->decodeToken($token, $audience) !== null;
+        return $this->decodeToken($token, $audience) instanceof JWTToken;
     }
 
     public function getTokenTTL(JWTToken $token): int
     {
-        $now = new DateTime;
+        $now = new DateTimeImmutable;
         $expiresAt = $token->expiresAt();
 
         $diff = $expiresAt->getTimestamp() - $now->getTimestamp();
@@ -141,7 +139,7 @@ final class JWTTokenService implements TokenServiceInterface
     private function getAudienceConfig(string $audience): array
     {
         if (! isset($this->jwtConfig[$audience])) {
-            throw new Exception("Invalid audience: {$audience}");
+            throw new Exception('Invalid audience: '.$audience);
         }
 
         return $this->jwtConfig[$audience];

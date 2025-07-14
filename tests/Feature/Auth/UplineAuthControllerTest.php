@@ -1,112 +1,81 @@
 <?php
 
-namespace Tests\Feature\Auth;
+declare(strict_types=1);
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+test('successful upline login', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('upline login with invalid credentials', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('upline login with validation errors', function (): void {
+    // Act
+    $response = $this->postJson('/api/v1/auth/upline/login', [
+        'username' => '',
+        'password' => '',
+    ]);
 
-class UplineAuthControllerTest extends TestCase
+    // Assert
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['username', 'password']);
+});
+test('successful upline token refresh', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('upline token refresh with invalid token', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('upline token refresh without token', function (): void {
+    // Act
+    $response = $this->postJson('/api/v1/auth/upline/refresh', []);
+
+    // Assert - API returns 422 for validation errors, which is correct
+    $response->assertStatus(422);
+    $response->assertJson([
+        'success' => false,
+        'message' => 'Validation failed',
+    ]);
+    $response->assertJsonValidationErrors(['refresh_token']);
+});
+test('successful upline logout', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('upline logout handles exceptions', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('successful upline profile retrieval', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('upline profile without authentication', function (): void {
+    // Act (without middleware, this should be handled at the route level)
+    $response = $this->getJson('/api/v1/auth/upline/profile');
+
+    // Assert - depends on middleware implementation
+    // This might be 401 or handle differently based on middleware
+    expect(in_array($response->status(), [401, 403, 422]))->toBeTrue();
+});
+test('upline profile handles exceptions', function (): void {
+    $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
+});
+test('routes are defined', function (): void {
+    // Test that the routes exist
+    assertRouteExists('POST', '/api/v1/auth/upline/login');
+    assertRouteExists('POST', '/api/v1/auth/upline/refresh');
+    assertRouteExists('POST', '/api/v1/auth/upline/logout');
+    assertRouteExists('GET', '/api/v1/auth/upline/profile');
+});
+function assertRouteExists(string $method, string $uri): void
 {
-    use RefreshDatabase;
+    $routes = app('router')->getRoutes();
+    $foundRoute = false;
 
-    public function test_successful_upline_login()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_upline_login_with_invalid_credentials()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_upline_login_with_validation_errors()
-    {
-        // Act
-        $response = $this->postJson('/api/v1/auth/upline/login', [
-            'username' => '',
-            'password' => '',
-        ]);
-
-        // Assert
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['username', 'password']);
-    }
-
-    public function test_successful_upline_token_refresh()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_upline_token_refresh_with_invalid_token()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_upline_token_refresh_without_token()
-    {
-        // Act
-        $response = $this->postJson('/api/v1/auth/upline/refresh', []);
-
-        // Assert - API returns 422 for validation errors, which is correct
-        $response->assertStatus(422);
-        $response->assertJson([
-            'success' => false,
-            'message' => 'Validation failed',
-        ]);
-        $response->assertJsonValidationErrors(['refresh_token']);
-    }
-
-    public function test_successful_upline_logout()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_upline_logout_handles_exceptions()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_successful_upline_profile_retrieval()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_upline_profile_without_authentication()
-    {
-        // Act (without middleware, this should be handled at the route level)
-        $response = $this->getJson('/api/v1/auth/upline/profile');
-
-        // Assert - depends on middleware implementation
-        // This might be 401 or handle differently based on middleware
-        $this->assertTrue(in_array($response->status(), [401, 403, 422]));
-    }
-
-    public function test_upline_profile_handles_exceptions()
-    {
-        $this->markTestSkipped('Complex auth test - requires refactoring due to final class dependencies');
-    }
-
-    public function test_routes_are_defined()
-    {
-        // Test that the routes exist
-        $this->assertRouteExists('POST', '/api/v1/auth/upline/login');
-        $this->assertRouteExists('POST', '/api/v1/auth/upline/refresh');
-        $this->assertRouteExists('POST', '/api/v1/auth/upline/logout');
-        $this->assertRouteExists('GET', '/api/v1/auth/upline/profile');
-    }
-
-    private function assertRouteExists(string $method, string $uri)
-    {
-        $routes = app('router')->getRoutes();
-        $foundRoute = false;
-
-        foreach ($routes as $route) {
-            if (in_array($method, $route->methods()) && $route->uri() === ltrim($uri, '/')) {
-                $foundRoute = true;
-                break;
-            }
+    foreach ($routes as $route) {
+        if (in_array($method, $route->methods()) && $route->uri() === mb_ltrim($uri, '/')) {
+            $foundRoute = true;
+            break;
         }
-
-        $this->assertTrue($foundRoute, "Route {$method} {$uri} does not exist");
     }
+
+    expect($foundRoute)->toBeTrue(sprintf('Route %s %s does not exist', $method, $uri));
 }

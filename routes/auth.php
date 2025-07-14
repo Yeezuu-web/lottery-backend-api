@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Auth\MemberAuthController;
 use App\Http\Controllers\Auth\UplineAuthController;
 use App\Http\Middleware\MemberAuthMiddleware;
@@ -18,26 +20,26 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Upline Authentication Routes
-Route::prefix('upline')->group(function () {
+Route::prefix('upline')->group(function (): void {
     // Public routes
     Route::post('login', [UplineAuthController::class, 'login']);
     Route::post('refresh', [UplineAuthController::class, 'refresh']);
 
     // Protected routes
-    Route::middleware([UplineAuthMiddleware::class])->group(function () {
+    Route::middleware([UplineAuthMiddleware::class])->group(function (): void {
         Route::post('logout', [UplineAuthController::class, 'logout']);
         Route::get('profile', [UplineAuthController::class, 'profile']);
     });
 });
 
 // Member Authentication Routes
-Route::prefix('')->group(function () {
+Route::prefix('')->group(function (): void {
     // Public routes
     Route::post('login', [MemberAuthController::class, 'login']);
     Route::post('refresh', [MemberAuthController::class, 'refresh']);
 
     // Protected routes
-    Route::middleware([MemberAuthMiddleware::class])->group(function () {
+    Route::middleware([MemberAuthMiddleware::class])->group(function (): void {
         Route::post('logout', [MemberAuthController::class, 'logout']);
         Route::get('profile', [MemberAuthController::class, 'profile']);
     });

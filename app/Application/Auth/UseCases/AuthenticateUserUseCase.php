@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\UseCases;
 
 use App\Application\Auth\DTOs\AuthenticateUserCommand;
@@ -10,28 +12,11 @@ use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
+use Exception;
 
-final class AuthenticateUserUseCase
+final readonly class AuthenticateUserUseCase
 {
-    private readonly AgentRepositoryInterface $agentRepository;
-
-    private readonly TokenServiceInterface $tokenService;
-
-    private readonly AuthenticationDomainServiceInterface $authDomainService;
-
-    private readonly AuthenticationServiceInterface $authInfrastructureService;
-
-    public function __construct(
-        AgentRepositoryInterface $agentRepository,
-        TokenServiceInterface $tokenService,
-        AuthenticationDomainServiceInterface $authDomainService,
-        AuthenticationServiceInterface $authInfrastructureService
-    ) {
-        $this->agentRepository = $agentRepository;
-        $this->tokenService = $tokenService;
-        $this->authDomainService = $authDomainService;
-        $this->authInfrastructureService = $authInfrastructureService;
-    }
+    public function __construct(private AgentRepositoryInterface $agentRepository, private TokenServiceInterface $tokenService, private AuthenticationDomainServiceInterface $authDomainService, private AuthenticationServiceInterface $authInfrastructureService) {}
 
     /**
      * Execute authentication workflow
@@ -45,10 +30,10 @@ final class AuthenticateUserUseCase
         try {
             $username = new Username($command->username);
             $agent = $this->agentRepository->findByUsername($username);
-            if (! $agent) {
+            if (! $agent instanceof \App\Domain\Agent\Models\Agent) {
                 throw AuthenticationException::invalidCredentials();
             }
-        } catch (\Exception $e) {
+        } catch (Exception) {
             // If username format is invalid, treat as invalid credentials
             throw AuthenticationException::invalidCredentials();
         }

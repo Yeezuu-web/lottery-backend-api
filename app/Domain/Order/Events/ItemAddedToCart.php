@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\Events;
 
 use App\Domain\Order\ValueObjects\BetData;
-use DateTime;
+use DateTimeImmutable;
 
 final readonly class ItemAddedToCart
 {
@@ -12,8 +14,13 @@ final readonly class ItemAddedToCart
         private BetData $betData,
         private array $expandedNumbers,
         private array $channelWeights,
-        private DateTime $occurredAt
+        private DateTimeImmutable $occurredAt
     ) {}
+
+    public static function now(int $agentId, BetData $betData, array $expandedNumbers, array $channelWeights): self
+    {
+        return new self($agentId, $betData, $expandedNumbers, $channelWeights, new DateTimeImmutable);
+    }
 
     public function agentId(): int
     {
@@ -35,14 +42,9 @@ final readonly class ItemAddedToCart
         return $this->channelWeights;
     }
 
-    public function occurredAt(): DateTime
+    public function occurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
-    }
-
-    public static function now(int $agentId, BetData $betData, array $expandedNumbers, array $channelWeights): self
-    {
-        return new self($agentId, $betData, $expandedNumbers, $channelWeights, new DateTime);
     }
 
     public function toArray(): array

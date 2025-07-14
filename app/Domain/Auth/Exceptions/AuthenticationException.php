@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Auth\Exceptions;
 
 use Exception;
 
-class AuthenticationException extends Exception
+final class AuthenticationException extends Exception
 {
     public static function invalidCredentials(): self
     {
@@ -18,7 +20,7 @@ class AuthenticationException extends Exception
 
     public static function invalidAudience(string $agentType, string $audience): self
     {
-        return new self("Agent type '{$agentType}' cannot authenticate for audience '{$audience}'", 403);
+        return new self(sprintf("Agent type '%s' cannot authenticate for audience '%s'", $agentType, $audience), 403);
     }
 
     public static function tokenExpired(): self

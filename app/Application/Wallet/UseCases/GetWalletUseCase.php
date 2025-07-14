@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\UseCases;
 
 use App\Application\Wallet\Contracts\TransactionRepositoryInterface;
@@ -9,13 +11,14 @@ use App\Application\Wallet\Responses\TransactionResponse;
 use App\Application\Wallet\Responses\WalletOperationResponse;
 use App\Application\Wallet\Responses\WalletResponse;
 use App\Domain\Wallet\Exceptions\WalletException;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
-final class GetWalletUseCase
+final readonly class GetWalletUseCase
 {
     public function __construct(
-        private readonly WalletRepositoryInterface $walletRepository,
-        private readonly TransactionRepositoryInterface $transactionRepository
+        private WalletRepositoryInterface $walletRepository,
+        private TransactionRepositoryInterface $transactionRepository
     ) {}
 
     public function execute(GetWalletQuery $query): WalletOperationResponse
@@ -23,7 +26,7 @@ final class GetWalletUseCase
         try {
             // Find wallet
             $wallet = $this->walletRepository->findById($query->walletId);
-            if (! $wallet) {
+            if (! $wallet instanceof \App\Domain\Wallet\Models\Wallet) {
                 throw WalletException::notFound($query->walletId);
             }
 
@@ -36,7 +39,7 @@ final class GetWalletUseCase
                 );
 
                 $transactions = array_map(
-                    fn ($transaction) => TransactionResponse::fromDomain($transaction)->toArray(),
+                    fn ($transaction): array => TransactionResponse::fromDomain($transaction)->toArray(),
                     $transactionModels
                 );
             }
@@ -45,7 +48,7 @@ final class GetWalletUseCase
             Log::info('Wallet retrieved successfully', [
                 'wallet_id' => $query->walletId,
                 'include_transactions' => $query->includeTransactions,
-                'transaction_count' => $transactions ? count($transactions) : 0,
+                'transaction_count' => $transactions !== null && $transactions !== [] ? count($transactions) : 0,
             ]);
 
             return WalletOperationResponse::success(
@@ -62,7 +65,7 @@ final class GetWalletUseCase
                 message: $e->getMessage(),
                 errors: ['wallet' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Unexpected error during wallet retrieval', [
                 'wallet_id' => $query->walletId,
                 'error' => $e->getMessage(),

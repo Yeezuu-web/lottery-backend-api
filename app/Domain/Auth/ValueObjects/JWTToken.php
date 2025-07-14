@@ -1,22 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Auth\ValueObjects;
 
-use DateTime;
+use DateTimeImmutable;
+use Stringable;
 
-final class JWTToken
+final readonly class JWTToken implements Stringable
 {
-    private readonly string $token;
+    public function __construct(private string $token, private array $payload, private DateTimeImmutable $expiresAt) {}
 
-    private readonly array $payload;
-
-    private readonly DateTime $expiresAt;
-
-    public function __construct(string $token, array $payload, DateTime $expiresAt)
+    public function __toString(): string
     {
-        $this->token = $token;
-        $this->payload = $payload;
-        $this->expiresAt = $expiresAt;
+        return $this->token;
     }
 
     public function token(): string
@@ -29,14 +26,14 @@ final class JWTToken
         return $this->payload;
     }
 
-    public function expiresAt(): DateTime
+    public function expiresAt(): DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
     public function isExpired(): bool
     {
-        return new DateTime > $this->expiresAt;
+        return new DateTimeImmutable > $this->expiresAt;
     }
 
     public function audience(): string
@@ -92,10 +89,5 @@ final class JWTToken
             'expires_at' => $this->expiresAt->format('c'),
             'is_expired' => $this->isExpired(),
         ];
-    }
-
-    public function __toString(): string
-    {
-        return $this->token;
     }
 }

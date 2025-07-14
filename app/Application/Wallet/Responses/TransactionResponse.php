@@ -1,25 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Wallet\Responses;
 
 use App\Domain\Wallet\Models\Transaction;
 
-final class TransactionResponse
+final readonly class TransactionResponse
 {
     public function __construct(
-        public readonly int $id,
-        public readonly int $walletId,
-        public readonly string $type,
-        public readonly array $amount,
-        public readonly array $balanceAfter,
-        public readonly string $reference,
-        public readonly string $description,
-        public readonly string $status,
-        public readonly ?array $metadata,
-        public readonly ?int $relatedTransactionId,
-        public readonly ?int $orderId,
-        public readonly string $createdAt,
-        public readonly string $updatedAt
+        public int $id,
+        public int $walletId,
+        public string $type,
+        public array $amount,
+        public array $balanceAfter,
+        public string $reference,
+        public string $description,
+        public string $status,
+        public ?array $metadata,
+        public ?int $relatedTransactionId,
+        public ?int $orderId,
+        public string $createdAt,
+        public string $updatedAt
     ) {}
 
     public static function fromDomain(Transaction $transaction): self

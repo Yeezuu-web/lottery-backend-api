@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\UseCases;
 
 use App\Application\AgentSettings\Commands\CreateAgentSettingsCommand;
@@ -9,11 +11,12 @@ use App\Application\AgentSettings\Responses\AgentSettingsResponse;
 use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
 use App\Domain\AgentSettings\Models\AgentSettings;
 use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
+use Exception;
 
-final class CreateAgentSettingsUseCase
+final readonly class CreateAgentSettingsUseCase
 {
     public function __construct(
-        private readonly AgentSettingsRepositoryInterface $repository
+        private AgentSettingsRepositoryInterface $repository
     ) {}
 
     public function execute(CreateAgentSettingsCommand $command): AgentSettingsOperationResponse
@@ -40,7 +43,7 @@ final class CreateAgentSettingsUseCase
                 message: $e->getMessage(),
                 errors: ['agent_settings' => $e->getMessage()]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return AgentSettingsOperationResponse::failure(
                 message: 'Failed to create agent settings',
                 errors: ['system' => $e->getMessage()]
@@ -67,7 +70,7 @@ final class CreateAgentSettingsUseCase
 
         // If commission or sharing rates are provided, update them
         if ($command->commissionRate !== null || $command->sharingRate !== null) {
-            $agentSettings = $agentSettings->updateCommissionSharingRates(
+            return $agentSettings->updateCommissionSharingRates(
                 $command->commissionRate,
                 $command->sharingRate
             );

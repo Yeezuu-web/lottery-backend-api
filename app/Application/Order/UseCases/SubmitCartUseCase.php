@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Order\UseCases;
 
 use App\Application\Order\Commands\SubmitCartCommand;
@@ -29,13 +31,13 @@ final readonly class SubmitCartUseCase
     {
         // 1. Validate and get agent
         $agent = $this->agentRepository->findById($command->agentId());
-        if (! $agent) {
+        if (! $agent instanceof Agent) {
             throw OrderException::invalidAgent($command->agentId());
         }
 
         // 2. Get cart items
         $cartItems = $this->cartRepository->getItems($agent);
-        if (empty($cartItems)) {
+        if ($cartItems === []) {
             throw CartException::empty();
         }
 
@@ -60,9 +62,9 @@ final readonly class SubmitCartUseCase
         $orders = $this->createOrdersFromCart($agent, $cartItems, $groupId);
 
         // 8. Begin transaction
-        return $this->orderRepository->transaction(function () use ($agent, $orders, $totalAmount, $groupId) {
+        return $this->orderRepository->transaction(function () use ($agent, $orders, $totalAmount, $groupId): array {
             // 9. Deduct wallet balance
-            $this->walletService->deductBalance($agent, $totalAmount, "Cart submission - Group: {$groupId->value()}");
+            $this->walletService->deductBalance($agent, $totalAmount, 'Cart submission - Group: '.$groupId->value());
 
             // 10. Save orders
             $orderIds = [];
@@ -99,7 +101,7 @@ final readonly class SubmitCartUseCase
                 'new_balance' => $this->walletService->getBalance($agent)->amount(),
                 'events' => [
                     'cart_submitted' => $cartSubmittedEvent,
-                    'orders_placed' => array_map(fn ($order) => OrderPlaced::now($order), $acceptedOrders),
+                    'orders_placed' => array_map(fn ($order): OrderPlaced => OrderPlaced::now($order), $acceptedOrders),
                 ],
             ];
         });

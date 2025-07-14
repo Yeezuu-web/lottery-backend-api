@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Order\ValueObjects;
 
 use App\Shared\Exceptions\ValidationException;
+use Stringable;
 
-final readonly class GroupId
+final readonly class GroupId implements Stringable
 {
     public function __construct(
         private string $value
@@ -12,7 +15,7 @@ final readonly class GroupId
         $this->validate();
     }
 
-    public function value(): string
+    public function __toString(): string
     {
         return $this->value;
     }
@@ -20,9 +23,9 @@ final readonly class GroupId
     public static function generate(): self
     {
         $timestamp = date('YmdHis');
-        $random = str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $random = mb_str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        return new self("GRP-{$timestamp}-{$random}");
+        return new self(sprintf('GRP-%s-%s', $timestamp, $random));
     }
 
     public static function fromString(string $value): self
@@ -30,28 +33,28 @@ final readonly class GroupId
         return new self($value);
     }
 
-    public function equals(GroupId $other): bool
-    {
-        return $this->value === $other->value;
-    }
-
-    public function __toString(): string
+    public function value(): string
     {
         return $this->value;
     }
 
+    public function equals(self $other): bool
+    {
+        return $this->value === $other->value;
+    }
+
     private function validate(): void
     {
-        if (empty($this->value)) {
+        if ($this->value === '' || $this->value === '0') {
             throw new ValidationException('Group ID cannot be empty');
         }
 
-        if (strlen($this->value) < 10) {
+        if (mb_strlen($this->value) < 10) {
             throw new ValidationException('Group ID must be at least 10 characters long');
         }
 
         // Validate format: GRP-YYYYMMDDHHMMSS-XXXXXX
-        if (! preg_match('/^GRP-\d{14}-\d{6}$/', $this->value)) {
+        if (in_array(preg_match('/^GRP-\d{14}-\d{6}$/', $this->value), [0, false], true)) {
             throw new ValidationException('Group ID must follow format: GRP-YYYYMMDDHHMMSS-XXXXXX');
         }
     }

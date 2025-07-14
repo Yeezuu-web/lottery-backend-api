@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\ValueObjects;
 
 enum TransactionStatus: string
@@ -10,6 +12,26 @@ enum TransactionStatus: string
     case FAILED = 'failed';
     case CANCELLED = 'cancelled';
     case REVERSED = 'reversed';
+
+    public static function getActiveStatuses(): array
+    {
+        return [self::PENDING, self::PROCESSING];
+    }
+
+    public static function getFinalStatuses(): array
+    {
+        return [self::COMPLETED, self::FAILED, self::CANCELLED, self::REVERSED];
+    }
+
+    public static function getSuccessStatuses(): array
+    {
+        return [self::COMPLETED];
+    }
+
+    public static function getFailureStatuses(): array
+    {
+        return [self::FAILED, self::CANCELLED, self::REVERSED];
+    }
 
     public function getLabel(): string
     {
@@ -99,26 +121,6 @@ enum TransactionStatus: string
             self::CANCELLED => [],
             self::REVERSED => [],
         };
-    }
-
-    public static function getActiveStatuses(): array
-    {
-        return [self::PENDING, self::PROCESSING];
-    }
-
-    public static function getFinalStatuses(): array
-    {
-        return [self::COMPLETED, self::FAILED, self::CANCELLED, self::REVERSED];
-    }
-
-    public static function getSuccessStatuses(): array
-    {
-        return [self::COMPLETED];
-    }
-
-    public static function getFailureStatuses(): array
-    {
-        return [self::FAILED, self::CANCELLED, self::REVERSED];
     }
 
     public function toArray(): array

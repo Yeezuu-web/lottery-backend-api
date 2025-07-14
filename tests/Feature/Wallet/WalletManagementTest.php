@@ -1,149 +1,124 @@
 <?php
 
-namespace Tests\Feature\Wallet;
-
+declare(strict_types=1);
 use App\Domain\Wallet\ValueObjects\Money;
 use App\Domain\Wallet\ValueObjects\TransactionType;
 use App\Domain\Wallet\ValueObjects\WalletType;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
 
-class WalletManagementTest extends TestCase
-{
-    use RefreshDatabase, WithFaker;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        // Set up test data if needed
-    }
+uses(Illuminate\Foundation\Testing\WithFaker::class);
 
-    public function test_can_get_wallet_types(): void
-    {
-        $response = $this->getJson('/api/v1/wallet/wallet-types');
+beforeEach(function (): void {
+    // Set up test data if needed
+});
+test('can get wallet types', function (): void {
+    $response = $this->getJson('/api/v1/wallet/wallet-types');
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    '*' => [
-                        'value',
-                        'label',
-                        'description',
-                        'is_active',
-                        'is_transferable',
-                    ],
+    $response->assertStatus(200)
+        ->assertJsonStructure([
+            'success',
+            'data' => [
+                '*' => [
+                    'value',
+                    'label',
+                    'description',
+                    'is_active',
+                    'is_transferable',
                 ],
-                'message',
-            ]);
-    }
+            ],
+            'message',
+        ]);
+});
+test('can get transaction types', function (): void {
+    $response = $this->getJson('/api/v1/wallet/transaction-types');
 
-    public function test_can_get_transaction_types(): void
-    {
-        $response = $this->getJson('/api/v1/wallet/transaction-types');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    '*' => [
-                        'value',
-                        'label',
-                        'description',
-                        'is_credit',
-                        'is_debit',
-                        'category',
-                    ],
+    $response->assertStatus(200)
+        ->assertJsonStructure([
+            'success',
+            'data' => [
+                '*' => [
+                    'value',
+                    'label',
+                    'description',
+                    'is_credit',
+                    'is_debit',
+                    'category',
                 ],
-                'message',
-            ]);
-    }
-
-    public function test_can_get_credit_transaction_types(): void
-    {
-        $response = $this->getJson('/api/v1/wallet/transaction-types/credit');
-
-        $response->assertStatus(200);
-
-        $creditTypes = $response->json('data');
-        foreach ($creditTypes as $type) {
-            $this->assertTrue($type['is_credit']);
-            $this->assertFalse($type['is_debit']);
-        }
-    }
-
-    public function test_can_get_debit_transaction_types(): void
-    {
-        $response = $this->getJson('/api/v1/wallet/transaction-types/debit');
-
-        $response->assertStatus(200);
-
-        $debitTypes = $response->json('data');
-        foreach ($debitTypes as $type) {
-            $this->assertFalse($type['is_credit']);
-            $this->assertTrue($type['is_debit']);
-        }
-    }
-
-    public function test_wallet_creation_requires_authentication(): void
-    {
-        $response = $this->postJson('/api/v1/wallet/wallets', [
-            'owner_id' => 1,
-            'wallet_type' => 'main',
-            'currency' => 'KHR',
+            ],
+            'message',
         ]);
+});
+test('can get credit transaction types', function (): void {
+    $response = $this->getJson('/api/v1/wallet/transaction-types/credit');
 
-        // This should fail due to authentication middleware
-        $response->assertStatus(401);
+    $response->assertStatus(200);
+
+    $creditTypes = $response->json('data');
+    foreach ($creditTypes as $type) {
+        expect($type['is_credit'])->toBeTrue();
+        expect($type['is_debit'])->toBeFalse();
     }
+});
+test('can get debit transaction types', function (): void {
+    $response = $this->getJson('/api/v1/wallet/transaction-types/debit');
 
-    public function test_wallet_initialization_requires_valid_data(): void
-    {
-        $response = $this->postJson('/api/v1/wallet/wallets/initialize', [
-            // Missing required fields
-        ]);
+    $response->assertStatus(200);
 
-        // This should fail due to authentication middleware first
-        $response->assertStatus(401);
+    $debitTypes = $response->json('data');
+    foreach ($debitTypes as $type) {
+        expect($type['is_credit'])->toBeFalse();
+        expect($type['is_debit'])->toBeTrue();
     }
+});
+test('wallet creation requires authentication', function (): void {
+    $response = $this->postJson('/api/v1/wallet/wallets', [
+        'owner_id' => 1,
+        'wallet_type' => 'main',
+        'currency' => 'KHR',
+    ]);
 
-    public function test_money_value_object_works_correctly(): void
-    {
-        $money1 = Money::fromAmount(10.50, 'KHR');
-        $money2 = Money::fromAmount(5.25, 'KHR');
+    // This should fail due to authentication middleware
+    $response->assertStatus(401);
+});
+test('wallet initialization requires valid data', function (): void {
+    $response = $this->postJson('/api/v1/wallet/wallets/initialize', [
+        // Missing required fields
+    ]);
 
-        $this->assertEquals(10.50, $money1->amount());
-        $this->assertEquals('KHR', $money1->currency());
-        $this->assertTrue($money1->isGreaterThan($money2));
+    // This should fail due to authentication middleware first
+    $response->assertStatus(401);
+});
+test('money value object works correctly', function (): void {
+    $money1 = Money::fromAmount(10.50, 'KHR');
+    $money2 = Money::fromAmount(5.25, 'KHR');
 
-        $sum = $money1->add($money2);
-        $this->assertEquals(15.75, $sum->amount());
+    expect($money1->amount())->toEqual(10.50);
+    expect($money1->currency())->toEqual('KHR');
+    expect($money1->isGreaterThan($money2))->toBeTrue();
 
-        $difference = $money1->subtract($money2);
-        $this->assertEquals(5.25, $difference->amount());
-    }
+    $sum = $money1->add($money2);
+    expect($sum->amount())->toEqual(15.75);
 
-    public function test_wallet_type_enum_works_correctly(): void
-    {
-        $mainWallet = WalletType::MAIN;
-        $commissionWallet = WalletType::COMMISSION;
+    $difference = $money1->subtract($money2);
+    expect($difference->amount())->toEqual(5.25);
+});
+test('wallet type enum works correctly', function (): void {
+    $mainWallet = WalletType::MAIN;
+    $commissionWallet = WalletType::COMMISSION;
 
-        $this->assertEquals('main', $mainWallet->value);
-        $this->assertEquals('Main Wallet', $mainWallet->getLabel());
-        $this->assertTrue($mainWallet->canTransferTo($commissionWallet));
-        $this->assertTrue($mainWallet->isActive());
-    }
+    expect($mainWallet->value)->toEqual('main');
+    expect($mainWallet->getLabel())->toEqual('Main Wallet');
+    expect($mainWallet->canTransferTo($commissionWallet))->toBeTrue();
+    expect($mainWallet->isActive())->toBeTrue();
+});
+test('transaction type enum works correctly', function (): void {
+    $creditType = TransactionType::CREDIT;
+    $debitType = TransactionType::DEBIT;
 
-    public function test_transaction_type_enum_works_correctly(): void
-    {
-        $creditType = TransactionType::CREDIT;
-        $debitType = TransactionType::DEBIT;
-
-        $this->assertTrue($creditType->isCredit());
-        $this->assertFalse($creditType->isDebit());
-        $this->assertFalse($debitType->isCredit());
-        $this->assertTrue($debitType->isDebit());
-        $this->assertEquals('general', $creditType->getCategory());
-    }
-}
+    expect($creditType->isCredit())->toBeTrue();
+    expect($creditType->isDebit())->toBeFalse();
+    expect($debitType->isCredit())->toBeFalse();
+    expect($debitType->isDebit())->toBeTrue();
+    expect($creditType->getCategory())->toEqual('general');
+});

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Order\Models;
 
 use App\Infrastructure\Agent\Models\EloquentAgent;
@@ -7,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class EloquentCart extends Model
+final class EloquentCart extends Model
 {
     use HasFactory;
 
@@ -189,7 +191,7 @@ class EloquentCart extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return number_format($this->total_amount, 2) . ' ' . $this->currency;
+        return number_format($this->total_amount, 2).' '.$this->currency;
     }
 
     /**
@@ -207,7 +209,8 @@ class EloquentCart extends Model
     {
         $betType = $this->bet_type ?? 'Unknown';
         $number = $this->number ?? 'N/A';
-        return "Cart Item - {$betType} #{$number}";
+
+        return sprintf('Cart Item - %s #%s', $betType, $number);
     }
 
     /**
@@ -231,7 +234,7 @@ class EloquentCart extends Model
      */
     public function hasExpandedNumbers(): bool
     {
-        return !empty($this->expanded_numbers);
+        return ! empty($this->expanded_numbers);
     }
 
     /**
@@ -239,6 +242,6 @@ class EloquentCart extends Model
      */
     public function hasChannelWeights(): bool
     {
-        return !empty($this->channel_weights);
+        return ! empty($this->channel_weights);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Wallet\Repositories;
 
 use App\Application\Wallet\Contracts\WalletRepositoryInterface;
@@ -11,20 +13,21 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
-final class WalletRepository implements WalletRepositoryInterface
+final readonly class WalletRepository implements WalletRepositoryInterface
 {
     private const CACHE_PREFIX = 'wallet';
+
     private const CACHE_TTL = 300; // 5 minutes
 
     public function __construct(
-        private readonly EloquentWallet $model
+        private EloquentWallet $model
     ) {}
 
     public function findById(int $walletId): ?Wallet
     {
         $cacheKey = $this->getCacheKey($walletId);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($walletId) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($walletId): ?\App\Domain\Wallet\Models\Wallet {
             $eloquentWallet = $this->model
                 ->with(['owner', 'transactions'])
                 ->find($walletId);
@@ -41,14 +44,14 @@ final class WalletRepository implements WalletRepositoryInterface
             ->orderBy('wallet_type')
             ->get();
 
-        return $eloquentWallets->map(fn($wallet) => $this->mapFromEloquent($wallet))->toArray();
+        return $eloquentWallets->map(fn ($wallet): Wallet => $this->mapFromEloquent($wallet))->toArray();
     }
 
     public function findByOwnerIdAndType(int $ownerId, WalletType $walletType): ?Wallet
     {
         $cacheKey = $this->getOwnerTypeCacheKey($ownerId, $walletType);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($ownerId, $walletType) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($ownerId, $walletType): ?\App\Domain\Wallet\Models\Wallet {
             $eloquentWallet = $this->model
                 ->with(['owner', 'transactions'])
                 ->where('owner_id', $ownerId)
@@ -73,11 +76,11 @@ final class WalletRepository implements WalletRepositoryInterface
 
     public function save(Wallet $wallet): Wallet
     {
-        return DB::transaction(function () use ($wallet) {
+        return DB::transaction(function () use ($wallet): Wallet {
             $eloquentWallet = $this->model->find($wallet->getId());
 
-            if (!$eloquentWallet) {
-                $eloquentWallet = new EloquentWallet();
+            if (! $eloquentWallet) {
+                $eloquentWallet = new EloquentWallet;
             }
 
             $eloquentWallet->fill([
@@ -101,15 +104,15 @@ final class WalletRepository implements WalletRepositoryInterface
 
     public function saveWithLock(Wallet $wallet): Wallet
     {
-        return DB::transaction(function () use ($wallet) {
+        return DB::transaction(function () use ($wallet): Wallet {
             // Lock the wallet for update to prevent race conditions
             $eloquentWallet = $this->model
                 ->where('id', $wallet->getId())
                 ->lockForUpdate()
                 ->first();
 
-            if (!$eloquentWallet) {
-                $eloquentWallet = new EloquentWallet();
+            if (! $eloquentWallet) {
+                $eloquentWallet = new EloquentWallet;
             }
 
             $eloquentWallet->fill([
@@ -135,7 +138,7 @@ final class WalletRepository implements WalletRepositoryInterface
     {
         return DB::transaction(function () use ($walletId) {
             $eloquentWallet = $this->model->find($walletId);
-            if (!$eloquentWallet) {
+            if (! $eloquentWallet) {
                 return false;
             }
 
@@ -171,7 +174,7 @@ final class WalletRepository implements WalletRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentWallets->map(fn($wallet) => $this->mapFromEloquent($wallet))->toArray();
+        return $eloquentWallets->map(fn ($wallet): Wallet => $this->mapFromEloquent($wallet))->toArray();
     }
 
     public function findByType(WalletType $walletType): array
@@ -182,7 +185,7 @@ final class WalletRepository implements WalletRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $eloquentWallets->map(fn($wallet) => $this->mapFromEloquent($wallet))->toArray();
+        return $eloquentWallets->map(fn ($wallet): Wallet => $this->mapFromEloquent($wallet))->toArray();
     }
 
     public function findWithLowBalance(float $threshold, string $currency): array
@@ -194,7 +197,7 @@ final class WalletRepository implements WalletRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentWallets->map(fn($wallet) => $this->mapFromEloquent($wallet))->toArray();
+        return $eloquentWallets->map(fn ($wallet): Wallet => $this->mapFromEloquent($wallet))->toArray();
     }
 
     public function findWithHighBalance(float $threshold, string $currency): array
@@ -206,7 +209,7 @@ final class WalletRepository implements WalletRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentWallets->map(fn($wallet) => $this->mapFromEloquent($wallet))->toArray();
+        return $eloquentWallets->map(fn ($wallet): Wallet => $this->mapFromEloquent($wallet))->toArray();
     }
 
     public function getTotalBalance(string $currency): array
@@ -223,14 +226,12 @@ final class WalletRepository implements WalletRepositoryInterface
             ->groupBy('wallet_type')
             ->get();
 
-        return $result->map(function ($item) use ($currency) {
-            return [
-                'wallet_type' => $item->wallet_type,
-                'total_balance' => Money::fromAmount($item->total_balance, $currency),
-                'total_locked_balance' => Money::fromAmount($item->total_locked_balance, $currency),
-                'wallet_count' => $item->wallet_count,
-            ];
-        })->toArray();
+        return $result->map(fn ($item): array => [
+            'wallet_type' => $item->wallet_type,
+            'total_balance' => Money::fromAmount($item->total_balance, $currency),
+            'total_locked_balance' => Money::fromAmount($item->total_locked_balance, $currency),
+            'wallet_count' => $item->wallet_count,
+        ])->toArray();
     }
 
     public function getBalancesByOwner(int $ownerId): array
@@ -241,15 +242,13 @@ final class WalletRepository implements WalletRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentWallets->map(function ($wallet) {
-            return [
-                'wallet_type' => $wallet->wallet_type,
-                'balance' => Money::fromAmount($wallet->balance, $wallet->currency),
-                'locked_balance' => Money::fromAmount($wallet->locked_balance, $wallet->currency),
-                'currency' => $wallet->currency,
-                'last_transaction_at' => $wallet->last_transaction_at,
-            ];
-        })->toArray();
+        return $eloquentWallets->map(fn ($wallet): array => [
+            'wallet_type' => $wallet->wallet_type,
+            'balance' => Money::fromAmount($wallet->balance, $wallet->currency),
+            'locked_balance' => Money::fromAmount($wallet->locked_balance, $wallet->currency),
+            'currency' => $wallet->currency,
+            'last_transaction_at' => $wallet->last_transaction_at,
+        ])->toArray();
     }
 
     public function findExpiredLocks(): array
@@ -261,7 +260,7 @@ final class WalletRepository implements WalletRepositoryInterface
 
     public function bulkUpdate(array $wallets): bool
     {
-        return DB::transaction(function () use ($wallets) {
+        return DB::transaction(function () use ($wallets): bool {
             $updated = 0;
             foreach ($wallets as $wallet) {
                 $eloquentWallet = $this->model->find($wallet->getId());
@@ -274,7 +273,7 @@ final class WalletRepository implements WalletRepositoryInterface
                     ]);
 
                     if ($eloquentWallet->save()) {
-                        $updated++;
+                        ++$updated;
                         $this->clearCache($wallet);
                     }
                 }
@@ -286,7 +285,7 @@ final class WalletRepository implements WalletRepositoryInterface
 
     public function findByIds(array $walletIds): array
     {
-        if (empty($walletIds)) {
+        if ($walletIds === []) {
             return [];
         }
 
@@ -295,7 +294,7 @@ final class WalletRepository implements WalletRepositoryInterface
             ->whereIn('id', $walletIds)
             ->get();
 
-        return $eloquentWallets->map(fn($wallet) => $this->mapFromEloquent($wallet))->toArray();
+        return $eloquentWallets->map(fn ($wallet): Wallet => $this->mapFromEloquent($wallet))->toArray();
     }
 
     public function getWalletStatistics(): array
@@ -315,18 +314,16 @@ final class WalletRepository implements WalletRepositoryInterface
             ->groupBy('wallet_type', 'currency')
             ->get();
 
-        return $stats->map(function ($stat) {
-            return [
-                'wallet_type' => $stat->wallet_type,
-                'currency' => $stat->currency,
-                'count' => $stat->count,
-                'total_balance' => Money::fromAmount($stat->total_balance, $stat->currency),
-                'avg_balance' => Money::fromAmount($stat->avg_balance, $stat->currency),
-                'min_balance' => Money::fromAmount($stat->min_balance, $stat->currency),
-                'max_balance' => Money::fromAmount($stat->max_balance, $stat->currency),
-                'total_locked_balance' => Money::fromAmount($stat->total_locked_balance, $stat->currency),
-            ];
-        })->toArray();
+        return $stats->map(fn ($stat): array => [
+            'wallet_type' => $stat->wallet_type,
+            'currency' => $stat->currency,
+            'count' => $stat->count,
+            'total_balance' => Money::fromAmount($stat->total_balance, $stat->currency),
+            'avg_balance' => Money::fromAmount($stat->avg_balance, $stat->currency),
+            'min_balance' => Money::fromAmount($stat->min_balance, $stat->currency),
+            'max_balance' => Money::fromAmount($stat->max_balance, $stat->currency),
+            'total_locked_balance' => Money::fromAmount($stat->total_locked_balance, $stat->currency),
+        ])->toArray();
     }
 
     private function mapFromEloquent(EloquentWallet $eloquentWallet): Wallet
@@ -347,12 +344,12 @@ final class WalletRepository implements WalletRepositoryInterface
 
     private function getCacheKey(int $walletId): string
     {
-        return self::CACHE_PREFIX . ':' . $walletId;
+        return self::CACHE_PREFIX.':'.$walletId;
     }
 
     private function getOwnerTypeCacheKey(int $ownerId, WalletType $walletType): string
     {
-        return self::CACHE_PREFIX . ':owner:' . $ownerId . ':type:' . $walletType->value;
+        return self::CACHE_PREFIX.':owner:'.$ownerId.':type:'.$walletType->value;
     }
 
     private function clearCache(Wallet $wallet): void

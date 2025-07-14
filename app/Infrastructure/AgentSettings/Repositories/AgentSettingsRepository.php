@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\AgentSettings\Repositories;
 
 use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
@@ -12,13 +14,14 @@ use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 
-final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
+final readonly class AgentSettingsRepository implements AgentSettingsRepositoryInterface
 {
     private const CACHE_PREFIX = 'agent_settings';
+
     private const CACHE_TTL = 3600; // 1 hour
 
     public function __construct(
-        private readonly EloquentAgentSettings $model
+        private EloquentAgentSettings $model
     ) {}
 
     public function findByAgentId(int $agentId): ?AgentSettings
@@ -37,7 +40,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->where('agent_id', $agentId)
             ->first();
 
-        if (!$eloquentSettings) {
+        if (! $eloquentSettings) {
             return null;
         }
 
@@ -55,8 +58,8 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->where('agent_id', $agentSettings->getAgentId())
             ->first();
 
-        if (!$eloquentSettings) {
-            $eloquentSettings = new EloquentAgentSettings();
+        if (! $eloquentSettings) {
+            $eloquentSettings = new EloquentAgentSettings;
         }
 
         $eloquentSettings->fill([
@@ -110,7 +113,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
 
     public function findByAgentIds(array $agentIds): array
     {
-        if (empty($agentIds)) {
+        if ($agentIds === []) {
             return [];
         }
 
@@ -119,7 +122,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->whereIn('agent_id', $agentIds)
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findWithExpiredCache(): array
@@ -129,12 +132,13 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->withExpiredCache()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function refreshCache(int $agentId): ?AgentSettings
     {
         $this->clearCache($agentId);
+
         return $this->findByAgentId($agentId);
     }
 
@@ -145,7 +149,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function getInheritanceChain(int $agentId): array
@@ -156,7 +160,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->where('agent_id', $agentId)
             ->first();
 
-        if (!$eloquentSettings || !$eloquentSettings->agent) {
+        if (! $eloquentSettings || ! $eloquentSettings->agent) {
             return [];
         }
 
@@ -165,9 +169,10 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
 
         while ($currentAgent) {
             $agentSettings = $this->findByAgentId($currentAgent->id);
-            if ($agentSettings) {
+            if ($agentSettings instanceof AgentSettings) {
                 $chain[] = $agentSettings;
             }
+
             $currentAgent = $currentAgent->parent;
         }
 
@@ -182,7 +187,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findWithInheritedPayoutProfile(): array
@@ -193,7 +198,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findWithCommissionRateAbove(float $threshold): array
@@ -204,7 +209,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findWithSharingRateAbove(float $threshold): array
@@ -215,7 +220,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findWithAutoSettlement(): array
@@ -226,7 +231,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findComputed(): array
@@ -237,7 +242,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function findNotComputed(): array
@@ -248,7 +253,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ->active()
             ->get();
 
-        return $eloquentSettings->map(fn($settings) => $this->mapFromEloquent($settings))->toArray();
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
     }
 
     public function updateCacheExpiration(int $agentId, Carbon $expiresAt): bool
@@ -286,7 +291,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
 
     public function bulkUpdateCacheExpiration(array $agentIds, Carbon $expiresAt): int
     {
-        if (empty($agentIds)) {
+        if ($agentIds === []) {
             return 0;
         }
 
@@ -316,31 +321,31 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             : PayoutProfile::default();
 
         $commissionRate = $eloquentSettings->commission_rate !== null
-            ? CommissionRate::fromPercentage($eloquentSettings->commission_rate)
+            ? CommissionRate::fromPercentage((float) $eloquentSettings->commission_rate)
             : null;
 
         $sharingRate = $eloquentSettings->sharing_rate !== null
-            ? SharingRate::fromPercentage($eloquentSettings->sharing_rate)
+            ? SharingRate::fromPercentage((float) $eloquentSettings->sharing_rate)
             : null;
 
         $effectiveCommissionRate = $eloquentSettings->effective_commission_rate !== null
-            ? CommissionRate::fromPercentage($eloquentSettings->effective_commission_rate)
+            ? CommissionRate::fromPercentage((float) $eloquentSettings->effective_commission_rate)
             : null;
 
         $effectiveSharingRate = $eloquentSettings->effective_sharing_rate !== null
-            ? SharingRate::fromPercentage($eloquentSettings->effective_sharing_rate)
+            ? SharingRate::fromPercentage((float) $eloquentSettings->effective_sharing_rate)
             : null;
 
         $commissionSharingSettings = new CommissionSharingSettings(
             $commissionRate,
             $sharingRate,
-            $eloquentSettings->max_commission_sharing_rate ?? 50.0
+            (float) ($eloquentSettings->max_commission_sharing_rate ?? 50.0)
         );
 
         $effectiveCommissionSharingSettings = new CommissionSharingSettings(
             $effectiveCommissionRate,
             $effectiveSharingRate,
-            $eloquentSettings->max_commission_sharing_rate ?? 50.0
+            (float) ($eloquentSettings->max_commission_sharing_rate ?? 50.0)
         );
 
         return new AgentSettings(
@@ -366,7 +371,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
 
     private function getCacheKey(int $agentId): string
     {
-        return self::CACHE_PREFIX . ':' . $agentId;
+        return self::CACHE_PREFIX.':'.$agentId;
     }
 
     private function clearCache(int $agentId): void
@@ -384,7 +389,7 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             'commission_rate' => $agentSettings->getCommissionRate()?->value(),
             'sharing_rate' => $agentSettings->getSharingRate()?->value(),
             'max_commission_sharing_rate' => $agentSettings->getMaxCommissionSharingRate(),
-            'effective_payout_profile' => $agentSettings->getEffectivePayoutProfile()?->toArray(),
+            'effective_payout_profile' => $agentSettings->getEffectivePayoutProfile()->toArray(),
             'effective_payout_source_agent_id' => $agentSettings->getEffectivePayoutSourceAgentId(),
             'effective_commission_rate' => $agentSettings->getEffectiveCommissionRate()?->value(),
             'effective_sharing_rate' => $agentSettings->getEffectiveSharingRate()?->value(),
@@ -426,14 +431,13 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             ? SharingRate::fromFloat($cached['effective_sharing_rate'])
             : null;
 
-        $commissionSharingSettings = CommissionSharingSettings::create(
+        $commissionSharingSettings = new CommissionSharingSettings(
             $commissionRate,
             $sharingRate,
-            $cached['max_commission_sharing_rate'],
-            $payoutProfile
+            (float) $cached['max_commission_sharing_rate']
         );
 
-        return AgentSettings::create(
+        return new AgentSettings(
             agentId: $cached['agent_id'],
             payoutProfile: $payoutProfile,
             payoutProfileSourceAgentId: $cached['payout_profile_source_agent_id'],
@@ -441,8 +445,11 @@ final class AgentSettingsRepository implements AgentSettingsRepositoryInterface
             commissionSharingSettings: $commissionSharingSettings,
             effectivePayoutProfile: $effectivePayoutProfile,
             effectivePayoutSourceAgentId: $cached['effective_payout_source_agent_id'],
-            effectiveCommissionRate: $effectiveCommissionRate,
-            effectiveSharingRate: $effectiveSharingRate,
+            effectiveCommissionSharingSettings: new CommissionSharingSettings(
+                $effectiveCommissionRate,
+                $effectiveSharingRate,
+                (float) $cached['max_commission_sharing_rate']
+            ),
             isComputed: $cached['is_computed'],
             computedAt: $cached['computed_at'] ? Carbon::parse($cached['computed_at']) : null,
             cacheExpiresAt: $cached['cache_expires_at'] ? Carbon::parse($cached['cache_expires_at']) : null,

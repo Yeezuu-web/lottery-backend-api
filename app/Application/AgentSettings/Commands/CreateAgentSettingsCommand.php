@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\AgentSettings\Commands;
 
-final class CreateAgentSettingsCommand
+final readonly class CreateAgentSettingsCommand
 {
     public function __construct(
-        public readonly int $agentId,
-        public readonly ?array $payoutProfile = null,
-        public readonly ?float $commissionRate = null,
-        public readonly ?float $sharingRate = null,
-        public readonly array $bettingLimits = [],
-        public readonly array $blockedNumbers = [],
-        public readonly bool $autoSettlement = false,
-        public readonly bool $isActive = true
+        public int $agentId,
+        public ?array $payoutProfile = null,
+        public ?float $commissionRate = null,
+        public ?float $sharingRate = null,
+        public array $bettingLimits = [],
+        public array $blockedNumbers = [],
+        public bool $autoSettlement = false,
+        public bool $isActive = true
     ) {}
 
     public function toArray(): array

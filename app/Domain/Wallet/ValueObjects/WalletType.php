@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\ValueObjects;
 
 enum WalletType: string
@@ -9,6 +11,35 @@ enum WalletType: string
     case BONUS = 'bonus';
     case PENDING = 'pending';
     case LOCKED = 'locked';
+
+    public static function getAll(): array
+    {
+        return [
+            self::MAIN,
+            self::COMMISSION,
+            self::BONUS,
+            self::PENDING,
+            self::LOCKED,
+        ];
+    }
+
+    public static function getActive(): array
+    {
+        return [
+            self::MAIN,
+            self::COMMISSION,
+            self::BONUS,
+        ];
+    }
+
+    public static function getTransferable(): array
+    {
+        return [
+            self::MAIN,
+            self::COMMISSION,
+            self::BONUS,
+        ];
+    }
 
     public function getLabel(): string
     {
@@ -56,35 +87,6 @@ enum WalletType: string
     public function isTransferable(): bool
     {
         return $this->isActive();
-    }
-
-    public static function getAll(): array
-    {
-        return [
-            self::MAIN,
-            self::COMMISSION,
-            self::BONUS,
-            self::PENDING,
-            self::LOCKED,
-        ];
-    }
-
-    public static function getActive(): array
-    {
-        return [
-            self::MAIN,
-            self::COMMISSION,
-            self::BONUS,
-        ];
-    }
-
-    public static function getTransferable(): array
-    {
-        return [
-            self::MAIN,
-            self::COMMISSION,
-            self::BONUS,
-        ];
     }
 
     public function toArray(): array

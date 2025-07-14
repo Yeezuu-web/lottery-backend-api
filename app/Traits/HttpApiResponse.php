@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
 use Illuminate\Http\JsonResponse;
@@ -38,11 +40,11 @@ trait HttpApiResponse
             'timestamp' => now()->toISOString(),
         ];
 
-        if (! empty($errors)) {
+        if ($errors !== []) {
             $response['errors'] = $errors;
         }
 
-        if (! empty($data)) {
+        if ($data !== []) {
             $response['data'] = $data;
         }
 

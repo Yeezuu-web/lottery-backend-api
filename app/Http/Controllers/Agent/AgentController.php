@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Agent;
 
 use App\Application\Agent\Commands\CreateAgentCommand;
@@ -14,7 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class AgentController extends Controller
+final class AgentController extends Controller
 {
     use HttpApiResponse;
 
@@ -22,25 +24,6 @@ class AgentController extends Controller
         private readonly CreateAgentUseCase $createAgentUseCase,
         private readonly GetAgentsUseCase $getAgentsUseCase
     ) {}
-
-    /**
-     * Get the authenticated agent ID from request
-     */
-    private function getAuthenticatedAgentId(Request $request): int
-    {
-        // Check for explicit viewer_id parameter first
-        if ($request->has('viewer_id')) {
-            return $request->input('viewer_id');
-        }
-
-        // Get from JWT token stored by UplineAuthMiddleware
-        $agentId = $request->attributes->get('agent_id');
-        if ($agentId) {
-            return $agentId;
-        }
-
-        return Auth::user()?->id ?? 0;
-    }
 
     /**
      * Get list of agents (direct downlines or drill-down)
@@ -105,7 +88,7 @@ class AgentController extends Controller
         $response = $this->getAgentsUseCase->execute($command);
         $agents = $response->getAgents();
 
-        if (empty($agents)) {
+        if ($agents === []) {
             return $this->notFound('Agent not found');
         }
 
@@ -162,7 +145,7 @@ class AgentController extends Controller
      */
     public function creatableTypes(Request $request): JsonResponse
     {
-        $viewerId = $this->getAuthenticatedAgentId($request);
+        $this->getAuthenticatedAgentId($request);
 
         // This would typically be handled by a separate use case
         // For now, return static agent types
@@ -209,5 +192,24 @@ class AgentController extends Controller
             $agentTypes,
             'Agent types retrieved successfully'
         );
+    }
+
+    /**
+     * Get the authenticated agent ID from request
+     */
+    private function getAuthenticatedAgentId(Request $request): int
+    {
+        // Check for explicit viewer_id parameter first
+        if ($request->has('viewer_id')) {
+            return $request->input('viewer_id');
+        }
+
+        // Get from JWT token stored by UplineAuthMiddleware
+        $agentId = $request->attributes->get('agent_id');
+        if ($agentId) {
+            return $agentId;
+        }
+
+        return Auth::user()?->id ?? 0;
     }
 }

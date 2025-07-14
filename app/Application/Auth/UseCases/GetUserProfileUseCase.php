@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Auth\UseCases;
 
 use App\Application\Auth\DTOs\OperationResponse;
@@ -8,19 +10,9 @@ use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Domain\Auth\Services\AuthenticationDomainService;
 use App\Domain\Auth\ValueObjects\JWTToken;
 
-final class GetUserProfileUseCase
+final readonly class GetUserProfileUseCase
 {
-    private readonly AgentRepositoryInterface $agentRepository;
-
-    private readonly AuthenticationDomainService $authDomainService;
-
-    public function __construct(
-        AgentRepositoryInterface $agentRepository,
-        AuthenticationDomainService $authDomainService
-    ) {
-        $this->agentRepository = $agentRepository;
-        $this->authDomainService = $authDomainService;
-    }
+    public function __construct(private AgentRepositoryInterface $agentRepository, private AuthenticationDomainService $authDomainService) {}
 
     /**
      * Execute get user profile workflow
@@ -34,7 +26,7 @@ final class GetUserProfileUseCase
 
         // 2. Find agent by ID from token (infrastructure operation)
         $agent = $this->agentRepository->findById($token->getAgentId());
-        if (! $agent) {
+        if (! $agent instanceof \App\Domain\Agent\Models\Agent) {
             throw AuthenticationException::invalidToken();
         }
 

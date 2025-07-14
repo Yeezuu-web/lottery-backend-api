@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\AgentSettings;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateAgentSettingsRequest extends FormRequest
+final class CreateAgentSettingsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -51,23 +53,9 @@ class CreateAgentSettingsRequest extends FormRequest
         ];
     }
 
-    protected function prepareForValidation(): void
-    {
-        // Convert empty strings to null for nullable fields
-        $this->merge([
-            'commission_rate' => $this->commission_rate === '' ? null : $this->commission_rate,
-            'sharing_rate' => $this->sharing_rate === '' ? null : $this->sharing_rate,
-            'payout_profile' => $this->payout_profile === '' ? null : $this->payout_profile,
-            'betting_limits' => $this->betting_limits === '' ? [] : $this->betting_limits,
-            'blocked_numbers' => $this->blocked_numbers === '' ? [] : $this->blocked_numbers,
-            'auto_settlement' => $this->auto_settlement === '' ? false : $this->auto_settlement,
-            'is_active' => $this->is_active === '' ? true : $this->is_active,
-        ]);
-    }
-
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function ($validator): void {
             // Custom validation: if both commission and sharing rates are provided,
             // ensure they don't exceed reasonable limits when combined
             $commissionRate = $this->getCommissionRate();
@@ -81,13 +69,13 @@ class CreateAgentSettingsRequest extends FormRequest
             }
 
             // Validate payout profile structure if provided
-            if ($this->getPayoutProfile()) {
+            if (! in_array($this->getPayoutProfile(), [null, []], true)) {
                 $profile = $this->getPayoutProfile();
                 $maxRate = $profile['max_commission_sharing_rate'] ?? 50;
                 $total = ($commissionRate ?? 0) + ($sharingRate ?? 0);
 
                 if ($total > $maxRate) {
-                    $validator->errors()->add('commission_rate', "Combined rates cannot exceed the payout profile maximum of {$maxRate}%");
+                    $validator->errors()->add('commission_rate', sprintf('Combined rates cannot exceed the payout profile maximum of %s%%', $maxRate));
                 }
             }
         });
@@ -135,5 +123,19 @@ class CreateAgentSettingsRequest extends FormRequest
     public function getIsActive(): bool
     {
         return $this->boolean('is_active', true);
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // Convert empty strings to null for nullable fields
+        $this->merge([
+            'commission_rate' => $this->commission_rate === '' ? null : $this->commission_rate,
+            'sharing_rate' => $this->sharing_rate === '' ? null : $this->sharing_rate,
+            'payout_profile' => $this->payout_profile === '' ? null : $this->payout_profile,
+            'betting_limits' => $this->betting_limits === '' ? [] : $this->betting_limits,
+            'blocked_numbers' => $this->blocked_numbers === '' ? [] : $this->blocked_numbers,
+            'auto_settlement' => $this->auto_settlement === '' ? false : $this->auto_settlement,
+            'is_active' => $this->is_active === '' ? true : $this->is_active,
+        ]);
     }
 }
