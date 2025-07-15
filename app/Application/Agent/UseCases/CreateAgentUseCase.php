@@ -7,6 +7,7 @@ namespace App\Application\Agent\UseCases;
 use App\Application\Agent\Commands\CreateAgentCommand;
 use App\Application\Agent\Responses\AgentResponse;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
+use App\Domain\Agent\Events\AgentCreated;
 use App\Domain\Agent\Exceptions\AgentException;
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Agent\Services\AgentDomainService;
@@ -67,6 +68,9 @@ final readonly class CreateAgentUseCase
 
         // Save the agent
         $savedAgent = $this->agentRepository->save($agent);
+
+        // Dispatch domain event for wallet creation
+        event(AgentCreated::now($savedAgent));
 
         // Get agent statistics
         $statistics = $this->agentDomainService->getAgentStatistics($savedAgent);

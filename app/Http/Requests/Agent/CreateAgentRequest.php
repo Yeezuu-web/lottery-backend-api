@@ -195,12 +195,12 @@ final class CreateAgentRequest extends FormRequest
     private function isValidUsernamePattern(string $username, string $agentType): bool
     {
         return match ($agentType) {
-            'company' => preg_match('/^[A-Z]$/', $username),
-            'super senior' => preg_match('/^[A-Z]{2}$/', $username),
-            'senior' => preg_match('/^[A-Z]{4}$/', $username),
-            'master' => preg_match('/^[A-Z]{6}$/', $username),
-            'agent' => preg_match('/^[A-Z]{8}$/', $username),
-            'member' => preg_match('/^[A-Z]{8}\d{3}$/', $username),
+            'company' => (bool) preg_match('/^[A-Z]$/', $username),
+            'super senior' => (bool) preg_match('/^[A-Z]{2}$/', $username),
+            'senior' => (bool) preg_match('/^[A-Z]{4}$/', $username),
+            'master' => (bool) preg_match('/^[A-Z]{6}$/', $username),
+            'agent' => (bool) preg_match('/^[A-Z]{8}$/', $username),
+            'member' => (bool) preg_match('/^[A-Z]{8}\d{3}$/', $username),
             default => false
         };
     }
