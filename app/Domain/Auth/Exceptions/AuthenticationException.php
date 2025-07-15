@@ -20,7 +20,7 @@ final class AuthenticationException extends Exception
 
     public static function invalidAudience(string $agentType, string $audience): self
     {
-        return new self(sprintf("Agent type '%s' cannot authenticate for audience '%s'", $agentType, $audience), 403);
+        return new self(sprintf("Agent type '%s' cannot authenticate '%s'", $agentType, $audience), 403);
     }
 
     public static function tokenExpired(): self

@@ -80,7 +80,7 @@ final readonly class SuspiciousActivityDetected
             'os' => $this->deviceInfo->os(),
             'country' => $this->deviceInfo->country(),
             'city' => $this->deviceInfo->city(),
-            'location' => $this->deviceInfo->location(),
+            'location' => $this->deviceInfo->getLocationString(),
             'metadata' => $this->metadata,
             'occurred_at' => $this->occurredAt->format('Y-m-d H:i:s'),
         ];

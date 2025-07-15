@@ -117,6 +117,4 @@ final class CreditWalletRequest extends FormRequest
             'currency' => $this->currency ?? 'KHR',
         ]);
     }
-
-
 }

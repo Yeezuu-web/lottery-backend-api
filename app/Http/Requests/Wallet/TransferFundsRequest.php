@@ -106,12 +106,14 @@ final class TransferFundsRequest extends FormRequest
     public function getOrderId(): ?int
     {
         $orderId = $this->input('order_id');
+
         return $orderId !== null ? (int) $orderId : null;
     }
 
     public function getInitiatorAgentId(): ?int
     {
         $initiatorId = $this->input('initiator_agent_id');
+
         return $initiatorId !== null ? (int) $initiatorId : null;
     }
 

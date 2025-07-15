@@ -11,6 +11,7 @@ use App\Domain\Auth\Events\LoginSuccessful;
 use App\Domain\Auth\Events\SessionEnded;
 use App\Domain\Auth\Events\SuspiciousActivityDetected;
 use App\Domain\Auth\Services\LoginAuditService;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
@@ -31,7 +32,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->audience(),
                 $event->deviceInfo()
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to record login attempt', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
@@ -61,7 +62,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                     $event->sessionId()
                 );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to record successful login', [
                 'username' => $event->agent()->username()->value(),
                 'audience' => $event->audience(),
@@ -92,7 +93,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                     $event->deviceInfo()
                 );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to record failed login', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
@@ -123,7 +124,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                     $event->deviceInfo()
                 );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to record blocked login', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
@@ -144,7 +145,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->logoutReason(),
                 $event->deviceInfo()
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to record session end', [
                 'username' => $event->agent()->username()->value(),
                 'session_id' => $event->sessionId(),
@@ -167,7 +168,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->deviceInfo(),
                 $event->metadata()
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to record suspicious activity', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),

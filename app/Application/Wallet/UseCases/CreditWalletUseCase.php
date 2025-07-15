@@ -131,6 +131,4 @@ final readonly class CreditWalletUseCase
     {
         return $prefix.'_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
     }
-
-
 }

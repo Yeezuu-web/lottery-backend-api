@@ -8,7 +8,7 @@ use App\Shared\Exceptions\ValidationException;
 use JsonSerializable;
 use Stringable;
 
-final readonly class Money implements Stringable, JsonSerializable
+final readonly class Money implements JsonSerializable, Stringable
 {
     private function __construct(
         private float $amount,

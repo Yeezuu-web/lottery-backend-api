@@ -73,7 +73,7 @@ final readonly class LoginBlocked
             'os' => $this->deviceInfo->os(),
             'country' => $this->deviceInfo->country(),
             'city' => $this->deviceInfo->city(),
-            'location' => $this->deviceInfo->location(),
+            'location' => $this->deviceInfo->getLocationString(),
             'occurred_at' => $this->occurredAt->format('Y-m-d H:i:s'),
         ];
     }

@@ -77,6 +77,44 @@ final readonly class LoginAudit
         );
     }
 
+    public static function createSuspiciousActivity(
+        string $username,
+        string $audience,
+        DeviceInfo $deviceInfo,
+        array $riskFactors,
+        string $threatLevel,
+        array $metadata = []
+    ): self {
+        $now = new DateTimeImmutable();
+
+        return new self(
+            id: 0, // Will be set by repository
+            agentId: null,
+            username: $username,
+            agentType: null,
+            audience: $audience,
+            status: LoginAuditStatus::suspicious(),
+            failureReason: 'Suspicious activity detected',
+            attemptedAt: $now,
+            succeededAt: null,
+            sessionId: null,
+            jwtTokenId: null,
+            tokenExpiresAt: null,
+            sessionEndedAt: null,
+            logoutReason: null,
+            deviceInfo: $deviceInfo,
+            isSuspicious: true,
+            riskFactors: $riskFactors,
+            failedAttemptsCount: 0,
+            lastFailedAttemptAt: null,
+            referer: null,
+            headers: [],
+            metadata: array_merge($metadata, ['threat_level' => $threatLevel]),
+            createdAt: $now,
+            updatedAt: $now
+        );
+    }
+
     public function markAsSuccessful(
         int $agentId,
         string $agentType,
@@ -202,44 +240,6 @@ final readonly class LoginAudit
             $this->metadata,
             $this->createdAt,
             new DateTimeImmutable()
-        );
-    }
-
-    public static function createSuspiciousActivity(
-        string $username,
-        string $audience,
-        DeviceInfo $deviceInfo,
-        array $riskFactors,
-        string $threatLevel,
-        array $metadata = []
-    ): self {
-        $now = new DateTimeImmutable();
-
-        return new self(
-            id: 0, // Will be set by repository
-            agentId: null,
-            username: $username,
-            agentType: null,
-            audience: $audience,
-            status: LoginAuditStatus::suspicious(),
-            failureReason: 'Suspicious activity detected',
-            attemptedAt: $now,
-            succeededAt: null,
-            sessionId: null,
-            jwtTokenId: null,
-            tokenExpiresAt: null,
-            sessionEndedAt: null,
-            logoutReason: null,
-            deviceInfo: $deviceInfo,
-            isSuspicious: true,
-            riskFactors: $riskFactors,
-            failedAttemptsCount: 0,
-            lastFailedAttemptAt: null,
-            referer: null,
-            headers: [],
-            metadata: array_merge($metadata, ['threat_level' => $threatLevel]),
-            createdAt: $now,
-            updatedAt: $now
         );
     }
 

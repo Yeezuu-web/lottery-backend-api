@@ -25,7 +25,7 @@ final readonly class InterAgentTransferService
      */
     public function validateInterAgentTransfer(TransferFundsCommand $command): array
     {
-        if (!$command->isInterAgentTransfer()) {
+        if (! $command->isInterAgentTransfer()) {
             throw new ValidationException('Transfer must specify initiator agent ID for inter-agent transfers');
         }
 
@@ -33,7 +33,7 @@ final readonly class InterAgentTransferService
         $fromWallet = $this->walletRepository->findById($command->fromWalletId);
         $toWallet = $this->walletRepository->findById($command->toWalletId);
 
-        if (!$fromWallet instanceof Wallet || !$toWallet instanceof Wallet) {
+        if (! $fromWallet instanceof Wallet || ! $toWallet instanceof Wallet) {
             throw WalletException::notFound($command->fromWalletId);
         }
 
@@ -42,7 +42,7 @@ final readonly class InterAgentTransferService
         $toAgent = $this->agentRepository->findById($toWallet->getOwnerId());
         $initiatorAgent = $this->agentRepository->findById($command->initiatorAgentId);
 
-        if (!$fromAgent instanceof Agent || !$toAgent instanceof Agent || !$initiatorAgent instanceof Agent) {
+        if (! $fromAgent instanceof Agent || ! $toAgent instanceof Agent || ! $initiatorAgent instanceof Agent) {
             throw new ValidationException('Invalid agent in transfer');
         }
 
@@ -64,8 +64,35 @@ final readonly class InterAgentTransferService
                 'hierarchy_validated' => true,
                 'currency_compatible' => $fromWallet->getCurrency() === $toWallet->getCurrency(),
                 'wallet_types_compatible' => $fromWallet->getWalletType()->canTransferTo($toWallet->getWalletType()),
-            ]
+            ],
         ];
+    }
+
+    /**
+     * Get recommended transfer types for agent relationship
+     */
+    public function getRecommendedTransferTypes(Agent $fromAgent, Agent $toAgent): array
+    {
+        $types = [];
+
+        // Upline transfers - usually commission or profit sharing
+        if ($fromAgent->uplineId() === $toAgent->id()) {
+            $types[] = 'commission';
+            $types[] = 'manual';
+        }
+
+        // Downline transfers - usually funding or bonuses
+        if ($fromAgent->canManage($toAgent)) {
+            $types[] = 'bonus';
+            $types[] = 'manual';
+        }
+
+        // Peer transfers - usually manual
+        if ($fromAgent->uplineId() === $toAgent->uplineId() && $fromAgent->uplineId() !== null) {
+            $types[] = 'manual';
+        }
+
+        return $types;
     }
 
     /**
@@ -74,7 +101,7 @@ final readonly class InterAgentTransferService
     private function validateTransferPermissions(Agent $initiator, Agent $fromAgent, Agent $toAgent, TransferFundsCommand $command): void
     {
         // Rule 1: Initiator must be authorized to perform this transfer
-        if (!$this->canInitiateTransfer($initiator, $fromAgent, $toAgent, $command)) {
+        if (! $this->canInitiateTransfer($initiator, $fromAgent, $toAgent, $command)) {
             throw new ValidationException(
                 sprintf("Agent '%s' is not authorized to transfer from '%s' to '%s'",
                     $initiator->username()->value(),
@@ -173,7 +200,7 @@ final readonly class InterAgentTransferService
         }
 
         // Rule 2: Wallet type compatibility
-        if (!$fromWallet->getWalletType()->canTransferTo($toWallet->getWalletType())) {
+        if (! $fromWallet->getWalletType()->canTransferTo($toWallet->getWalletType())) {
             throw WalletException::transferNotAllowed($fromWallet->getWalletType()->value, $toWallet->getWalletType()->value);
         }
 
@@ -199,14 +226,14 @@ final readonly class InterAgentTransferService
 
             case 'bonus':
                 // Bonus transfers must go to main or bonus wallet
-                if (!in_array($toWallet->getWalletType(), [WalletType::MAIN, WalletType::BONUS])) {
+                if (! in_array($toWallet->getWalletType(), [WalletType::MAIN, WalletType::BONUS])) {
                     throw new ValidationException('Bonus transfers must go to main or bonus wallet');
                 }
                 break;
 
             case 'manual':
                 // Manual transfers have fewer restrictions but must follow hierarchy
-                if (!$this->canTransferTo($fromAgent, $toAgent)) {
+                if (! $this->canTransferTo($fromAgent, $toAgent)) {
                     throw new ValidationException('Manual transfer not allowed between these agents');
                 }
                 break;
@@ -275,51 +302,24 @@ final readonly class InterAgentTransferService
         switch ($command->transferType) {
             case 'commission':
                 // Only agents who can manage both parties can do commission transfers
-                if (!$initiator->canManage($fromAgent) || !$initiator->canManage($toAgent)) {
+                if (! $initiator->canManage($fromAgent) || ! $initiator->canManage($toAgent)) {
                     throw new ValidationException('Insufficient permissions for commission transfer');
                 }
                 break;
 
             case 'bonus':
                 // Only upline can give bonuses
-                if (!$initiator->canManage($toAgent)) {
+                if (! $initiator->canManage($toAgent)) {
                     throw new ValidationException('Insufficient permissions for bonus transfer');
                 }
                 break;
 
             case 'manual':
                 // Manual transfers need either self-authorization or management permissions
-                if ($initiator->id() !== $fromAgent->id() && !$initiator->canManage($fromAgent)) {
+                if ($initiator->id() !== $fromAgent->id() && ! $initiator->canManage($fromAgent)) {
                     throw new ValidationException('Insufficient permissions for manual transfer');
                 }
                 break;
         }
-    }
-
-    /**
-     * Get recommended transfer types for agent relationship
-     */
-    public function getRecommendedTransferTypes(Agent $fromAgent, Agent $toAgent): array
-    {
-        $types = [];
-
-        // Upline transfers - usually commission or profit sharing
-        if ($fromAgent->uplineId() === $toAgent->id()) {
-            $types[] = 'commission';
-            $types[] = 'manual';
-        }
-
-        // Downline transfers - usually funding or bonuses
-        if ($fromAgent->canManage($toAgent)) {
-            $types[] = 'bonus';
-            $types[] = 'manual';
-        }
-
-        // Peer transfers - usually manual
-        if ($fromAgent->uplineId() === $toAgent->uplineId() && $fromAgent->uplineId() !== null) {
-            $types[] = 'manual';
-        }
-
-        return $types;
     }
 }

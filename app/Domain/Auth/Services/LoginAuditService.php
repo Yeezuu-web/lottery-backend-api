@@ -13,7 +13,7 @@ use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class LoginAuditService
+final class LoginAuditService
 {
     public function __construct(
         private LoginAuditRepositoryInterface $loginAuditRepository

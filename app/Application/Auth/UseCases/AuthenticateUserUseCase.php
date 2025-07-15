@@ -96,7 +96,7 @@ final readonly class AuthenticateUserUseCase
 
             // 7. Dispatch login successful event
             if ($deviceInfo instanceof DeviceInfo) {
-                $sessionId = 'sess_' . $agent->id() . '_' . $tokenPair->accessToken()->getJti() . '_' . Str::random(8);
+                $sessionId = 'sess_'.$agent->id().'_'.$tokenPair->accessToken()->getJti().'_'.Str::random(8);
                 $this->eventDispatcher->dispatch(
                     LoginSuccessful::now($agent, $command->audience, $deviceInfo, $tokenPair->accessToken(), $sessionId)
                 );
