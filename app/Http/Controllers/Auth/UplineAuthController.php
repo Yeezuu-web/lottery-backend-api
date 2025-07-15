@@ -38,7 +38,8 @@ final class UplineAuthController extends Controller
             $command = new AuthenticateUserCommand(
                 $request->username,
                 $request->password,
-                'upline'
+                'upline',
+                $request
             );
 
             $result = $this->authenticateUserUseCase->execute($command);

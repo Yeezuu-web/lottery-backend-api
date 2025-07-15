@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Agent\Models;
 
-use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
+use Illuminate\Notifications\Notifiable;
 use App\Infrastructure\Order\Models\EloquentCart;
 use App\Infrastructure\Order\Models\EloquentOrder;
-use App\Infrastructure\Wallet\Models\EloquentWallet;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Infrastructure\Wallet\Models\EloquentWallet;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
+use Database\Factories\Infrastructure\Agent\Models\EloquentAgentFactory;
 
 final class EloquentAgent extends Authenticatable
 {
+    /** @use HasFactory<EloquentAgentFactory> */
     use HasFactory;
     use Notifiable;
 

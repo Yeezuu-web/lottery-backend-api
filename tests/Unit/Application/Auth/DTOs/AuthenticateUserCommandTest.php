@@ -36,6 +36,7 @@ test('to array returns correct structure', function (): void {
     expect($array)->toEqual([
         'username' => $username,
         'audience' => $audience,
+        'has_request_context' => false,
     ]);
 
     // Password should not be included in toArray for security

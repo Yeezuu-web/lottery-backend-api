@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories;
+namespace Database\Factories\Infrastructure\Agent\Models;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use App\Domain\Agent\ValueObjects\AgentType;
+use App\Infrastructure\Agent\Models\EloquentAgent;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<EloquentAgent>
  */
-final class UserFactory extends Factory
+final class EloquentAgentFactory extends Factory
 {
+    protected $model = EloquentAgent::class;
+    
     /**
      * The current password being used by the factory.
      */
@@ -26,9 +30,13 @@ final class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'username' => 'A',
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'agent_type' => AgentType::COMPANY,
+            'status' => 'active',
+            'is_active' => true,
             'password' => self::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];

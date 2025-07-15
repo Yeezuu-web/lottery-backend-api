@@ -8,6 +8,7 @@ use App\Domain\Agent\ValueObjects\Username;
 use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
+use App\Domain\Auth\Services\LoginAuditService;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
 use Tests\Helpers\AuthTestHelper;
 
@@ -16,12 +17,14 @@ beforeEach(function (): void {
     $this->tokenService = Mockery::mock(TokenServiceInterface::class);
     $this->authDomainService = Mockery::mock(AuthenticationDomainServiceInterface::class);
     $this->authInfrastructureService = Mockery::mock(AuthenticationServiceInterface::class);
+    $this->loginAuditService = Mockery::mock(LoginAuditService::class);
 
     $this->useCase = new AuthenticateUserUseCase(
         $this->agentRepository,
         $this->tokenService,
         $this->authDomainService,
-        $this->authInfrastructureService
+        $this->authInfrastructureService,
+        $this->loginAuditService
     );
 });
 afterEach(function (): void {

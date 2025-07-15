@@ -47,4 +47,9 @@ final class AuthenticationException extends Exception
     {
         return new self('Invalid refresh token', 401);
     }
+
+    public static function blocked(): self
+    {
+        return new self('Account temporarily blocked due to multiple failed login attempts', 429);
+    }
 }

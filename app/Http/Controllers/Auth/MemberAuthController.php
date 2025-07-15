@@ -38,7 +38,8 @@ final class MemberAuthController extends Controller
             $command = new AuthenticateUserCommand(
                 $request->username,
                 $request->password,
-                'member'
+                'member',
+                $request
             );
 
             $result = $this->authenticateUserUseCase->execute($command);
