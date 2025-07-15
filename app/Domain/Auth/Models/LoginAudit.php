@@ -173,6 +173,76 @@ final readonly class LoginAudit
         );
     }
 
+    public function markAsBlocked(string $blockReason, array $riskFactors = []): self
+    {
+        $isSuspicious = $this->determineIfSuspicious($riskFactors);
+
+        return new self(
+            $this->id,
+            $this->agentId,
+            $this->username,
+            $this->agentType,
+            $this->audience,
+            LoginAuditStatus::blocked(),
+            $blockReason,
+            $this->attemptedAt,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $this->deviceInfo,
+            $isSuspicious,
+            array_merge($this->riskFactors, $riskFactors),
+            $this->failedAttemptsCount + 1,
+            new DateTimeImmutable(),
+            $this->referer,
+            $this->headers,
+            $this->metadata,
+            $this->createdAt,
+            new DateTimeImmutable()
+        );
+    }
+
+    public static function createSuspiciousActivity(
+        string $username,
+        string $audience,
+        DeviceInfo $deviceInfo,
+        array $riskFactors,
+        string $threatLevel,
+        array $metadata = []
+    ): self {
+        $now = new DateTimeImmutable();
+
+        return new self(
+            id: 0, // Will be set by repository
+            agentId: null,
+            username: $username,
+            agentType: null,
+            audience: $audience,
+            status: LoginAuditStatus::suspicious(),
+            failureReason: 'Suspicious activity detected',
+            attemptedAt: $now,
+            succeededAt: null,
+            sessionId: null,
+            jwtTokenId: null,
+            tokenExpiresAt: null,
+            sessionEndedAt: null,
+            logoutReason: null,
+            deviceInfo: $deviceInfo,
+            isSuspicious: true,
+            riskFactors: $riskFactors,
+            failedAttemptsCount: 0,
+            lastFailedAttemptAt: null,
+            referer: null,
+            headers: [],
+            metadata: array_merge($metadata, ['threat_level' => $threatLevel]),
+            createdAt: $now,
+            updatedAt: $now
+        );
+    }
+
     public function id(): int
     {
         return $this->id;

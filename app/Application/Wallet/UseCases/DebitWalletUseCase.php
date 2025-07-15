@@ -36,9 +36,12 @@ final readonly class DebitWalletUseCase
                     throw WalletException::notFound($command->walletId);
                 }
 
+                // Generate reference if not provided
+                $reference = $command->reference ?? $this->generateUniqueReference('DB');
+
                 // Check if reference already exists
-                if ($this->transactionRepository->existsByReference($command->reference)) {
-                    throw TransactionException::duplicateReference($command->reference);
+                if ($this->transactionRepository->existsByReference($reference)) {
+                    throw TransactionException::duplicateReference($reference);
                 }
 
                 // Store original balance for event
@@ -53,7 +56,7 @@ final readonly class DebitWalletUseCase
                     type: $command->transactionType,
                     amount: $command->amount,
                     balanceAfter: $debitedWallet->getBalance(),
-                    reference: $command->reference,
+                    reference: $reference,
                     description: $command->description,
                     metadata: $command->metadata,
                     relatedTransactionId: $command->relatedTransactionId,
@@ -122,5 +125,10 @@ final readonly class DebitWalletUseCase
                 errors: ['system' => $e->getMessage()]
             );
         }
+    }
+
+    private function generateUniqueReference(string $prefix): string
+    {
+        return $prefix.'_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
     }
 }

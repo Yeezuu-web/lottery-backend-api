@@ -31,7 +31,7 @@ final class DebitWalletRequest extends FormRequest
                 'string',
                 Rule::in($debitTypes),
             ],
-            'reference' => 'required|string|max:255|unique:wallet_transactions,reference',
+            'reference' => 'sometimes|string|max:255|unique:wallet_transactions,reference',
             'description' => 'sometimes|string|max:1000',
             'metadata' => 'sometimes|array',
             'order_id' => 'sometimes|integer|min:1',
@@ -64,8 +64,8 @@ final class DebitWalletRequest extends FormRequest
 
     public function getAmount(): Money
     {
-        return Money::fromFloat(
-            $this->input('amount'),
+        return Money::fromAmount(
+            (float) $this->input('amount'),
             $this->input('currency', 'KHR')
         );
     }
@@ -75,7 +75,7 @@ final class DebitWalletRequest extends FormRequest
         return TransactionType::from($this->input('transaction_type'));
     }
 
-    public function getReference(): string
+    public function getReference(): ?string
     {
         return $this->input('reference');
     }
@@ -104,12 +104,11 @@ final class DebitWalletRequest extends FormRequest
     {
         $this->merge([
             'currency' => $this->currency ?? 'KHR',
-            'reference' => $this->reference ?? $this->generateReference(),
         ]);
     }
 
     private function generateReference(): string
     {
-        return 'DB_'.time().'_'.mt_rand(100000, 999999);
+        return 'DB_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
     }
 }

@@ -13,7 +13,7 @@ use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-final readonly class LoginAuditService
+class LoginAuditService
 {
     public function __construct(
         private LoginAuditRepositoryInterface $loginAuditRepository
@@ -46,14 +46,64 @@ final readonly class LoginAuditService
     }
 
     /**
+     * Record a login attempt from event
+     */
+    public function recordLoginAttempt(
+        string $username,
+        string $audience,
+        DeviceInfo $deviceInfo,
+        array $metadata = []
+    ): LoginAudit {
+        $loginAudit = LoginAudit::createAttempt(
+            agentId: null, // Will be set on successful login
+            username: $username,
+            audience: $audience,
+            deviceInfo: $deviceInfo,
+            referer: null,
+            headers: [],
+            metadata: $metadata
+        );
+
+        return $this->loginAuditRepository->save($loginAudit);
+    }
+
+    /**
+     * Find a recent login attempt
+     */
+    public function findRecentLoginAttempt(
+        string $username,
+        string $audience,
+        DeviceInfo $deviceInfo
+    ): ?LoginAudit {
+        $attempts = $this->loginAuditRepository->findByUsername($username, 1);
+
+        if (empty($attempts)) {
+            return null;
+        }
+
+        $attempt = $attempts[0];
+
+        // Check if this is a recent attempt from the same device
+        $timeDiff = (new DateTimeImmutable())->getTimestamp() - $attempt->attemptedAt()->getTimestamp();
+        $isSameDevice = $attempt->deviceInfo()->ipAddress() === $deviceInfo->ipAddress();
+
+        if ($timeDiff <= 60 && $isSameDevice) { // Within 1 minute and same device
+            return $attempt;
+        }
+
+        return null;
+    }
+
+    /**
      * Mark a login attempt as successful
      */
     public function markAsSuccessful(
         LoginAudit $loginAudit,
         Agent $agent,
-        JWTToken $jwtToken
+        JWTToken $jwtToken,
+        ?string $sessionId = null
     ): LoginAudit {
-        $sessionId = $this->generateSessionId($agent, $jwtToken);
+        $sessionId = $sessionId ?? $this->generateSessionId($agent, $jwtToken);
 
         $successfulAudit = $loginAudit->markAsSuccessful(
             $agent->id(),
@@ -83,6 +133,23 @@ final readonly class LoginAuditService
     }
 
     /**
+     * Mark a login attempt as blocked
+     */
+    public function markAsBlocked(
+        LoginAudit $loginAudit,
+        string $blockReason,
+        string $username,
+        string $audience,
+        DeviceInfo $deviceInfo
+    ): LoginAudit {
+        $riskFactors = $this->assessRiskFactors($username, $audience, $deviceInfo);
+
+        $blockedAudit = $loginAudit->markAsBlocked($blockReason, $riskFactors);
+
+        return $this->loginAuditRepository->save($blockedAudit);
+    }
+
+    /**
      * Record a logout event
      */
     public function recordLogout(
@@ -90,6 +157,41 @@ final readonly class LoginAuditService
         string $logoutReason = 'manual'
     ): bool {
         return $this->loginAuditRepository->markSessionEnded($sessionId, $logoutReason);
+    }
+
+    /**
+     * Record a session end event
+     */
+    public function recordSessionEnd(
+        Agent $agent,
+        string $sessionId,
+        string $logoutReason,
+        DeviceInfo $deviceInfo
+    ): bool {
+        return $this->loginAuditRepository->markSessionEnded($sessionId, $logoutReason);
+    }
+
+    /**
+     * Record suspicious activity
+     */
+    public function recordSuspiciousActivity(
+        string $username,
+        string $audience,
+        array $riskFactors,
+        string $threatLevel,
+        DeviceInfo $deviceInfo,
+        array $metadata = []
+    ): LoginAudit {
+        $loginAudit = LoginAudit::createSuspiciousActivity(
+            username: $username,
+            audience: $audience,
+            deviceInfo: $deviceInfo,
+            riskFactors: $riskFactors,
+            threatLevel: $threatLevel,
+            metadata: $metadata
+        );
+
+        return $this->loginAuditRepository->save($loginAudit);
     }
 
     /**
@@ -122,6 +224,20 @@ final readonly class LoginAuditService
 
         // Block if too many failures from username or IP
         return $usernameFailures >= 5 || $ipFailures >= 10;
+    }
+
+    /**
+     * Get the count of failed attempts for a username and audience
+     */
+    public function getFailedAttemptCount(string $username, string $audience): int
+    {
+        $timeWindow = new DateTimeImmutable('-15 minutes');
+
+        return $this->loginAuditRepository->countFailedAttempts(
+            $username,
+            $audience,
+            $timeWindow
+        );
     }
 
     /**

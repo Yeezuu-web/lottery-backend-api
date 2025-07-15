@@ -36,9 +36,12 @@ final readonly class CreditWalletUseCase
                     throw WalletException::notFound($command->walletId);
                 }
 
+                // Generate reference if not provided
+                $reference = $command->reference ?? $this->generateUniqueReference('CR');
+
                 // Check if reference already exists
-                if ($this->transactionRepository->existsByReference($command->reference)) {
-                    throw TransactionException::duplicateReference($command->reference);
+                if ($this->transactionRepository->existsByReference($reference)) {
+                    throw TransactionException::duplicateReference($reference);
                 }
 
                 // Store original balance for event
@@ -53,7 +56,7 @@ final readonly class CreditWalletUseCase
                     type: $command->transactionType,
                     amount: $command->amount,
                     balanceAfter: $creditedWallet->getBalance(),
-                    reference: $command->reference,
+                    reference: $reference,
                     description: $command->description,
                     metadata: $command->metadata,
                     relatedTransactionId: $command->relatedTransactionId,
@@ -123,4 +126,11 @@ final readonly class CreditWalletUseCase
             );
         }
     }
+
+    private function generateUniqueReference(string $prefix): string
+    {
+        return $prefix.'_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
+    }
+
+
 }

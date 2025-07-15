@@ -10,6 +10,7 @@ use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Domain\Auth\Services\LoginAuditService;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Tests\Helpers\AuthTestHelper;
 
 beforeEach(function (): void {
@@ -18,13 +19,15 @@ beforeEach(function (): void {
     $this->authDomainService = Mockery::mock(AuthenticationDomainServiceInterface::class);
     $this->authInfrastructureService = Mockery::mock(AuthenticationServiceInterface::class);
     $this->loginAuditService = Mockery::mock(LoginAuditService::class);
+    $this->eventDispatcher = Mockery::mock(EventDispatcher::class);
 
     $this->useCase = new AuthenticateUserUseCase(
         $this->agentRepository,
         $this->tokenService,
         $this->authDomainService,
         $this->authInfrastructureService,
-        $this->loginAuditService
+        $this->loginAuditService,
+        $this->eventDispatcher
     );
 });
 afterEach(function (): void {
@@ -63,6 +66,9 @@ test('successful authentication', function (): void {
     $this->authInfrastructureService->shouldReceive('storeRefreshToken')
         ->once()
         ->with($tokenPair->refreshToken());
+
+    // Event dispatching expectations - no events should be dispatched for requests without context
+    $this->eventDispatcher->shouldReceive('dispatch')->never();
 
     // Act
     $result = $this->useCase->execute($command);

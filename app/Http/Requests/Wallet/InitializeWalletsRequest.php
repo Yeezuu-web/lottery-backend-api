@@ -34,7 +34,7 @@ final class InitializeWalletsRequest extends FormRequest
 
     public function getOwnerId(): int
     {
-        return $this->input('owner_id');
+        return (int) $this->input('owner_id');
     }
 
     public function getCurrency(): string

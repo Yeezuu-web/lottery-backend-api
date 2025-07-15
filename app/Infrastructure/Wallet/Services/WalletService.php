@@ -265,13 +265,15 @@ final readonly class WalletService implements WalletServiceInterface
                         'currency' => $currency,
                         'total_balance' => 0,
                         'total_locked' => 0,
-                        'total_available' => 0,
                     ];
                 }
 
-                $totalsByCurrency[$currency]['total_balance'] += $balance['balance'];
-                $totalsByCurrency[$currency]['total_locked'] += $balance['locked_balance'];
-                $totalsByCurrency[$currency]['total_available'] += $balance['available_balance'];
+                // Extract amounts from Money objects
+                $balanceAmount = $balance['balance']->amount();
+                $lockedAmount = $balance['locked_balance']->amount();
+
+                $totalsByCurrency[$currency]['total_balance'] += $balanceAmount;
+                $totalsByCurrency[$currency]['total_locked'] += $lockedAmount;
             }
 
             $summary['totals_by_currency'] = array_values($totalsByCurrency);

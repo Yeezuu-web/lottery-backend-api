@@ -110,6 +110,6 @@ final class TransferFundsRequest extends FormRequest
 
     private function generateReference(): string
     {
-        return 'TRF_'.time().'_'.mt_rand(100000, 999999);
+        return 'TRF_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
     }
 }

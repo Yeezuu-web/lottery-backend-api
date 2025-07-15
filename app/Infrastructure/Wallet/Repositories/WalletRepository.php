@@ -244,8 +244,8 @@ final readonly class WalletRepository implements WalletRepositoryInterface
 
         return $eloquentWallets->map(fn ($wallet): array => [
             'wallet_type' => $wallet->wallet_type,
-            'balance' => Money::fromAmount($wallet->balance, $wallet->currency),
-            'locked_balance' => Money::fromAmount($wallet->locked_balance, $wallet->currency),
+            'balance' => Money::fromAmount((float) $wallet->balance, $wallet->currency),
+            'locked_balance' => Money::fromAmount((float) $wallet->locked_balance, $wallet->currency),
             'currency' => $wallet->currency,
             'last_transaction_at' => $wallet->last_transaction_at,
         ])->toArray();
@@ -332,8 +332,8 @@ final readonly class WalletRepository implements WalletRepositoryInterface
             id: $eloquentWallet->id,
             ownerId: $eloquentWallet->owner_id,
             walletType: WalletType::from($eloquentWallet->wallet_type),
-            balance: Money::fromAmount($eloquentWallet->balance, $eloquentWallet->currency),
-            lockedBalance: Money::fromAmount($eloquentWallet->locked_balance, $eloquentWallet->currency),
+            balance: Money::fromAmount((float) $eloquentWallet->balance, $eloquentWallet->currency),
+            lockedBalance: Money::fromAmount((float) $eloquentWallet->locked_balance, $eloquentWallet->currency),
             currency: $eloquentWallet->currency,
             isActive: $eloquentWallet->is_active,
             lastTransactionAt: $eloquentWallet->last_transaction_at ? Carbon::parse($eloquentWallet->last_transaction_at) : null,
