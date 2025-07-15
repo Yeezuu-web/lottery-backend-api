@@ -67,7 +67,7 @@ final class AddToCartRequest extends FormRequest
                 'required',
                 'numeric',
                 'min:100',
-                'max:1000000',
+                'max:10000000',
             ],
         ];
     }

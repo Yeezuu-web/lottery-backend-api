@@ -15,7 +15,10 @@ final readonly class TransferFundsCommand
         public string $reference,
         public string $description,
         public ?array $metadata = null,
-        public ?int $orderId = null
+        public ?int $orderId = null,
+        public ?int $initiatorAgentId = null, // Agent who initiated the transfer
+        public ?string $transferType = 'manual', // 'manual', 'commission', 'bonus', 'system'
+        public ?array $businessRules = null // Additional business rules to validate
     ) {}
 
     public function toArray(): array
@@ -28,6 +31,34 @@ final readonly class TransferFundsCommand
             'description' => $this->description,
             'metadata' => $this->metadata,
             'order_id' => $this->orderId,
+            'initiator_agent_id' => $this->initiatorAgentId,
+            'transfer_type' => $this->transferType,
+            'business_rules' => $this->businessRules,
         ];
+    }
+
+    public function isInterAgentTransfer(): bool
+    {
+        return $this->initiatorAgentId !== null;
+    }
+
+    public function isCommissionTransfer(): bool
+    {
+        return $this->transferType === 'commission';
+    }
+
+    public function isBonusTransfer(): bool
+    {
+        return $this->transferType === 'bonus';
+    }
+
+    public function isSystemTransfer(): bool
+    {
+        return $this->transferType === 'system';
+    }
+
+    public function isManualTransfer(): bool
+    {
+        return $this->transferType === 'manual';
     }
 }

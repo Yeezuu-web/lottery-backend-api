@@ -106,9 +106,4 @@ final class DebitWalletRequest extends FormRequest
             'currency' => $this->currency ?? 'KHR',
         ]);
     }
-
-    private function generateReference(): string
-    {
-        return 'DB_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
-    }
 }

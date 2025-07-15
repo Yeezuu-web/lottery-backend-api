@@ -144,7 +144,10 @@ final class TransactionController extends Controller
             reference: $request->getReference(),
             description: $request->getDescription(),
             metadata: $request->getMetadata(),
-            orderId: $request->getOrderId()
+            orderId: $request->getOrderId(),
+            initiatorAgentId: $request->getInitiatorAgentId(),
+            transferType: $request->getTransferType(),
+            businessRules: $request->getBusinessRules()
         );
 
         $result = $this->walletService->transferFunds($command);
