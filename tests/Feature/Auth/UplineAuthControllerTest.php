@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Hash;
 use App\Domain\Agent\ValueObjects\AgentType;
 use App\Infrastructure\Agent\Models\EloquentAgent;
+use Illuminate\Support\Facades\Hash;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -110,7 +110,7 @@ test('successful upline logout', function (): void {
 
     // Add bearer token to the request
     $this->withHeaders([
-        'Authorization' => 'Bearer ' . $tokens['access_token'],
+        'Authorization' => 'Bearer '.$tokens['access_token'],
     ]);
 
     $response = $this->postJson('/api/v1/auth/upline/logout', [
@@ -163,7 +163,7 @@ test('successful upline profile retrieval', function (): void {
     $tokens = $loginResponse->json()['data']['tokens'];
 
     $response = $this->getJson('/api/v1/auth/upline/profile', [
-        'Authorization' => 'Bearer ' . $tokens['access_token'],
+        'Authorization' => 'Bearer '.$tokens['access_token'],
     ]);
 
     $response->assertStatus(200);

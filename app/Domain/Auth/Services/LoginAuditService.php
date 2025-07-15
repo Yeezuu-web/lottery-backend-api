@@ -13,7 +13,7 @@ use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class LoginAuditService
+final readonly class LoginAuditService
 {
     public function __construct(
         private LoginAuditRepositoryInterface $loginAuditRepository
@@ -186,7 +186,7 @@ class LoginAuditService
      */
     public function cleanupOldRecords(int $daysToKeep = 90): int
     {
-        $cutoffDate = new DateTimeImmutable("-{$daysToKeep} days");
+        $cutoffDate = new DateTimeImmutable(sprintf('-%d days', $daysToKeep));
 
         return $this->loginAuditRepository->cleanupOldRecords($cutoffDate);
     }
@@ -287,13 +287,6 @@ class LoginAuditService
      */
     private function isSuspiciousIp(string $ipAddress): bool
     {
-        // Basic check - could be expanded with proper IP reputation services
-        $suspiciousRanges = [
-            '10.0.0.0/8',    // Private network (if not expected)
-            '172.16.0.0/12', // Private network (if not expected)
-            '192.168.0.0/16', // Private network (if not expected)
-        ];
-
         // Check recent failures from this IP
         $recentFailures = $this->loginAuditRepository->countFailedAttemptsFromIp(
             $ipAddress,

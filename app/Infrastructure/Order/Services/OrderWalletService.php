@@ -44,7 +44,7 @@ final readonly class OrderWalletService implements WalletServiceInterface
                 // Find wallet with row-level locking to prevent race conditions
                 $wallet = $this->walletRepository->findByOwnerIdAndTypeWithLock($agent->id(), WalletType::MAIN);
 
-                if (!$wallet instanceof \App\Domain\Wallet\Models\Wallet) {
+                if (! $wallet instanceof \App\Domain\Wallet\Models\Wallet) {
                     throw WalletException::notFound($agent->id());
                 }
 
@@ -94,7 +94,7 @@ final readonly class OrderWalletService implements WalletServiceInterface
                 // Find wallet with row-level locking to prevent race conditions
                 $wallet = $this->walletRepository->findByOwnerIdAndTypeWithLock($agent->id(), WalletType::MAIN);
 
-                if (!$wallet instanceof \App\Domain\Wallet\Models\Wallet) {
+                if (! $wallet instanceof \App\Domain\Wallet\Models\Wallet) {
                     throw WalletException::notFound($agent->id());
                 }
 

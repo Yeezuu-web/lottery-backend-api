@@ -24,7 +24,7 @@ final readonly class AuthenticateUserCommand
         return [
             'username' => $this->username,
             'audience' => $this->audience,
-            'has_request_context' => $this->request !== null,
+            'has_request_context' => $this->request instanceof Request,
         ];
     }
 }

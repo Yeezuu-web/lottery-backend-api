@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Auth\ValueObjects;
 
 use App\Shared\Exceptions\ValidationException;
+use Stringable;
 
-final readonly class LoginAuditStatus
+final readonly class LoginAuditStatus implements Stringable
 {
     public const SUCCESS = 'success';
 

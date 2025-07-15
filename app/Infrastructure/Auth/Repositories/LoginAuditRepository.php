@@ -58,7 +58,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
             ->offset($offset)
             ->get();
 
-        return $eloquentModels->map(fn ($model) => $this->toDomainModel($model))->toArray();
+        return $eloquentModels->map(fn ($model): LoginAudit => $this->toDomainModel($model))->toArray();
     }
 
     public function findByUsername(string $username, int $limit = 50, int $offset = 0): array
@@ -70,7 +70,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
             ->offset($offset)
             ->get();
 
-        return $eloquentModels->map(fn ($model) => $this->toDomainModel($model))->toArray();
+        return $eloquentModels->map(fn ($model): LoginAudit => $this->toDomainModel($model))->toArray();
     }
 
     public function findByIpAddress(string $ipAddress, int $limit = 50, int $offset = 0): array
@@ -82,7 +82,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
             ->offset($offset)
             ->get();
 
-        return $eloquentModels->map(fn ($model) => $this->toDomainModel($model))->toArray();
+        return $eloquentModels->map(fn ($model): LoginAudit => $this->toDomainModel($model))->toArray();
     }
 
     public function findBySessionId(string $sessionId): ?LoginAudit
@@ -112,7 +112,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
             ->offset($offset)
             ->get();
 
-        return $eloquentModels->map(fn ($model) => $this->toDomainModel($model))->toArray();
+        return $eloquentModels->map(fn ($model): LoginAudit => $this->toDomainModel($model))->toArray();
     }
 
     public function countFailedAttempts(string $username, string $audience, DateTimeImmutable $since): int
@@ -142,7 +142,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
             ->orderByDesc('succeeded_at')
             ->get();
 
-        return $eloquentModels->map(fn ($model) => $this->toDomainModel($model))->toArray();
+        return $eloquentModels->map(fn ($model): LoginAudit => $this->toDomainModel($model))->toArray();
     }
 
     public function findSuspiciousAttempts(int $limit = 100, int $offset = 0): array
@@ -154,7 +154,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
             ->offset($offset)
             ->get();
 
-        return $eloquentModels->map(fn ($model) => $this->toDomainModel($model))->toArray();
+        return $eloquentModels->map(fn ($model): LoginAudit => $this->toDomainModel($model))->toArray();
     }
 
     public function getLoginStatistics(
@@ -164,7 +164,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
     ): array {
         $query = $this->model->inDateRange($startDate, $endDate);
 
-        if ($audience) {
+        if ($audience !== null && $audience !== '' && $audience !== '0') {
             $query = $query->forAudience($audience);
         }
 
@@ -209,7 +209,7 @@ final readonly class LoginAuditRepository implements LoginAuditRepositoryInterfa
         return $this->model
             ->inDateRange($startDate, $endDate)
             ->select(
-                DB::raw("DATE_FORMAT(attempted_at, '$dateFormat') as period"),
+                DB::raw(sprintf("DATE_FORMAT(attempted_at, '%s') as period", $dateFormat)),
                 DB::raw('COUNT(*) as total_attempts'),
                 DB::raw('COUNT(CASE WHEN status = "success" THEN 1 END) as successful_logins'),
                 DB::raw('COUNT(CASE WHEN status = "failed" THEN 1 END) as failed_attempts')

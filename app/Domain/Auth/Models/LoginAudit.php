@@ -300,12 +300,12 @@ final readonly class LoginAudit
 
     public function isActive(): bool
     {
-        return $this->isSuccessful() && $this->sessionEndedAt === null;
+        return $this->isSuccessful() && ! $this->sessionEndedAt instanceof DateTimeImmutable;
     }
 
     public function getSessionDuration(): ?int
     {
-        if ($this->succeededAt === null) {
+        if (! $this->succeededAt instanceof DateTimeImmutable) {
             return null;
         }
 
@@ -348,16 +348,12 @@ final readonly class LoginAudit
     private function determineIfSuspicious(array $riskFactors): bool
     {
         // Mark as suspicious if there are any risk factors
-        if (! empty($riskFactors)) {
+        if ($riskFactors !== []) {
             return true;
         }
 
         // Mark as suspicious if there are multiple recent failures
-        if ($this->failedAttemptsCount >= 3) {
-            return true;
-        }
-
         // Add more suspicious behavior detection logic here
-        return false;
+        return $this->failedAttemptsCount >= 3;
     }
 }

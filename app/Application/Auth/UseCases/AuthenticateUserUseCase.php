@@ -34,7 +34,7 @@ final readonly class AuthenticateUserUseCase
         $loginAudit = null;
 
         // Record login attempt if request context is available
-        if ($command->request !== null) {
+        if ($command->request instanceof \Illuminate\Http\Request) {
             // Check if login should be blocked due to too many failed attempts
             $deviceInfo = DeviceInfo::fromHttpRequest($command->request);
             if ($this->loginAuditService->shouldBlockLogin($command->username, $command->audience, $deviceInfo->ipAddress())) {
@@ -77,20 +77,21 @@ final readonly class AuthenticateUserUseCase
             $this->authInfrastructureService->storeRefreshToken($tokenPair->refreshToken());
 
             // 7. Mark login as successful in audit log
-            if ($loginAudit !== null) {
+            if ($loginAudit instanceof \App\Domain\Auth\Models\LoginAudit) {
                 $this->loginAuditService->markAsSuccessful($loginAudit, $agent, $tokenPair->accessToken());
             }
 
             // 8. Return successful response
             return AuthenticateUserResponse::success($agent, $tokenPair);
 
-        } catch (AuthenticationException $e) {
+        } catch (AuthenticationException $authenticationException) {
             // Mark login as failed in audit log
-            if ($loginAudit !== null && $command->request !== null) {
+            if ($loginAudit instanceof \App\Domain\Auth\Models\LoginAudit && $command->request instanceof \Illuminate\Http\Request) {
                 $deviceInfo = DeviceInfo::fromHttpRequest($command->request);
-                $this->loginAuditService->markAsFailed($loginAudit, $e->getMessage(), $command->username, $command->audience, $deviceInfo);
+                $this->loginAuditService->markAsFailed($loginAudit, $authenticationException->getMessage(), $command->username, $command->audience, $deviceInfo);
             }
-            throw $e;
+
+            throw $authenticationException;
         }
     }
 }

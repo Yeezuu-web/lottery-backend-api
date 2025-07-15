@@ -18,18 +18,14 @@ final class LoginAuditServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Register the repository interface binding
-        $this->app->singleton(LoginAuditRepositoryInterface::class, function ($app) {
-            return new LoginAuditRepository(
-                $app->make(EloquentLoginAudit::class)
-            );
-        });
+        $this->app->singleton(LoginAuditRepositoryInterface::class, fn ($app): LoginAuditRepository => new LoginAuditRepository(
+            $app->make(EloquentLoginAudit::class)
+        ));
 
         // Register the login audit service
-        $this->app->singleton(LoginAuditService::class, function ($app) {
-            return new LoginAuditService(
-                $app->make(LoginAuditRepositoryInterface::class)
-            );
-        });
+        $this->app->singleton(LoginAuditService::class, fn ($app): LoginAuditService => new LoginAuditService(
+            $app->make(LoginAuditRepositoryInterface::class)
+        ));
     }
 
     /**

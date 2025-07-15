@@ -205,7 +205,7 @@ final class OrderController extends Controller
 
             $agent = $agentRepository->findById($agentId);
 
-            if (!$agent instanceof \App\Domain\Agent\Models\Agent) {
+            if (! $agent instanceof \App\Domain\Agent\Models\Agent) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Agent not found',

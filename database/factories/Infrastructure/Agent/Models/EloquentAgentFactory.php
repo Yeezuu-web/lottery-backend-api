@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Factories\Infrastructure\Agent\Models;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
 use App\Domain\Agent\ValueObjects\AgentType;
 use App\Infrastructure\Agent\Models\EloquentAgent;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<EloquentAgent>
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 final class EloquentAgentFactory extends Factory
 {
     protected $model = EloquentAgent::class;
-    
+
     /**
      * The current password being used by the factory.
      */

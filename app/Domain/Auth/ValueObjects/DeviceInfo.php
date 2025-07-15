@@ -106,7 +106,7 @@ final readonly class DeviceInfo
     {
         $parts = array_filter([$this->city, $this->country]);
 
-        return implode(', ', $parts) ?: 'Unknown';
+        return in_array(implode(', ', $parts), ['', '0'], true) ? 'Unknown' : implode(', ', $parts);
     }
 
     public function toArray(): array
@@ -132,11 +132,7 @@ final readonly class DeviceInfo
 
         // Detect device type
         if (preg_match('/Mobile|Android|iPhone|iPad/', $userAgent)) {
-            if (preg_match('/iPad/', $userAgent)) {
-                $deviceType = 'tablet';
-            } else {
-                $deviceType = 'mobile';
-            }
+            $deviceType = preg_match('/iPad/', $userAgent) ? 'tablet' : 'mobile';
         }
 
         // Detect browser
@@ -172,11 +168,11 @@ final readonly class DeviceInfo
 
     private function validate(): void
     {
-        if (empty($this->userAgent)) {
+        if ($this->userAgent === '' || $this->userAgent === '0') {
             throw new ValidationException('User agent cannot be empty');
         }
 
-        if (empty($this->ipAddress)) {
+        if ($this->ipAddress === '' || $this->ipAddress === '0') {
             throw new ValidationException('IP address cannot be empty');
         }
 
