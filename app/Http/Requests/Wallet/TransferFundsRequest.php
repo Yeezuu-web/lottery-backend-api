@@ -25,6 +25,9 @@ final class TransferFundsRequest extends FormRequest
             'description' => 'required|string|max:1000',
             'metadata' => 'sometimes|array',
             'order_id' => 'sometimes|integer|min:1',
+            'initiator_agent_id' => 'sometimes|integer|min:1|exists:agents,id',
+            'transfer_type' => 'sometimes|string|in:manual,commission,bonus,system',
+            'business_rules' => 'sometimes|array',
         ];
     }
 
@@ -48,6 +51,11 @@ final class TransferFundsRequest extends FormRequest
             'metadata.array' => 'Metadata must be an array',
             'order_id.integer' => 'Order ID must be an integer',
             'order_id.min' => 'Order ID must be at least 1',
+            'initiator_agent_id.integer' => 'Initiator agent ID must be an integer',
+            'initiator_agent_id.min' => 'Initiator agent ID must be at least 1',
+            'initiator_agent_id.exists' => 'Initiator agent does not exist',
+            'transfer_type.in' => 'Transfer type must be one of: manual, commission, bonus, system',
+            'business_rules.array' => 'Business rules must be an array',
         ];
     }
 
@@ -56,7 +64,7 @@ final class TransferFundsRequest extends FormRequest
         $validator->after(function ($validator): void {
             // Additional validation logic
             $amount = $this->input('amount');
-            if ($amount && $amount > 50000) {
+            if ($amount && $amount > 100000000) {
                 $validator->errors()->add('amount', 'Large transfers require additional approval');
             }
         });
@@ -64,18 +72,18 @@ final class TransferFundsRequest extends FormRequest
 
     public function getFromWalletId(): int
     {
-        return $this->input('from_wallet_id');
+        return (int) $this->input('from_wallet_id');
     }
 
     public function getToWalletId(): int
     {
-        return $this->input('to_wallet_id');
+        return (int) $this->input('to_wallet_id');
     }
 
     public function getAmount(): Money
     {
-        return Money::fromFloat(
-            $this->input('amount'),
+        return Money::fromAmount(
+            (float) $this->input('amount'),
             $this->input('currency', 'KHR')
         );
     }
@@ -97,7 +105,26 @@ final class TransferFundsRequest extends FormRequest
 
     public function getOrderId(): ?int
     {
-        return $this->input('order_id');
+        $orderId = $this->input('order_id');
+
+        return $orderId !== null ? (int) $orderId : null;
+    }
+
+    public function getInitiatorAgentId(): ?int
+    {
+        $initiatorId = $this->input('initiator_agent_id');
+
+        return $initiatorId !== null ? (int) $initiatorId : null;
+    }
+
+    public function getTransferType(): string
+    {
+        return $this->input('transfer_type', 'manual');
+    }
+
+    public function getBusinessRules(): ?array
+    {
+        return $this->input('business_rules');
     }
 
     protected function prepareForValidation(): void
@@ -110,6 +137,6 @@ final class TransferFundsRequest extends FormRequest
 
     private function generateReference(): string
     {
-        return 'TRF_'.time().'_'.mt_rand(100000, 999999);
+        return 'TRF_'.str_replace('.', '', (string) microtime(true)).'_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid());
     }
 }

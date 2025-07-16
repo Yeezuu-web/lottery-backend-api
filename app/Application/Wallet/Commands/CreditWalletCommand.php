@@ -13,7 +13,7 @@ final readonly class CreditWalletCommand
         public int $walletId,
         public Money $amount,
         public TransactionType $transactionType,
-        public string $reference,
+        public ?string $reference,
         public string $description,
         public ?array $metadata = null,
         public ?int $orderId = null,

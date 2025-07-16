@@ -8,21 +8,48 @@ use App\Domain\AgentSettings\Models\AgentSettings;
 
 interface AgentSettingsRepositoryInterface
 {
+    /**
+     * Find agent settings by agent ID
+     */
     public function findByAgentId(int $agentId): ?AgentSettings;
 
+    /**
+     * Save agent settings
+     */
     public function save(AgentSettings $agentSettings): AgentSettings;
 
+    /**
+     * Delete agent settings
+     */
     public function delete(int $agentId): bool;
 
-    public function exists(int $agentId): bool;
+    /**
+     * Get daily usage for agent (current date)
+     */
+    public function getDailyUsage(int $agentId): int;
 
-    public function findByAgentIds(array $agentIds): array;
+    /**
+     * Get number usage for agent (current date)
+     */
+    public function getNumberUsage(int $agentId): array;
 
-    public function findWithExpiredCache(): array;
+    /**
+     * Increment daily usage (for caching)
+     */
+    public function incrementDailyUsage(int $agentId, int $amount): void;
 
-    public function refreshCache(int $agentId): ?AgentSettings;
+    /**
+     * Increment number usage (for caching)
+     */
+    public function incrementNumberUsage(int $agentId, string $gameType, string $number, int $amount): void;
 
-    public function getAllActive(): array;
+    /**
+     * Get active agent settings
+     */
+    public function getActiveSettings(): array;
 
-    public function getInheritanceChain(int $agentId): array;
+    /**
+     * Check if agent has settings
+     */
+    public function hasSettings(int $agentId): bool;
 }

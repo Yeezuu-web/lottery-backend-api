@@ -388,16 +388,20 @@ final readonly class TransactionRepository implements TransactionRepositoryInter
 
     private function mapFromEloquent(EloquentTransaction $eloquentTransaction): Transaction
     {
-        return Transaction::create(
+        return new Transaction(
+            id: $eloquentTransaction->id,
             walletId: $eloquentTransaction->wallet_id,
             type: TransactionType::from($eloquentTransaction->type),
-            amount: Money::fromAmount($eloquentTransaction->amount, $eloquentTransaction->wallet->currency ?? 'USD'),
-            balanceAfter: Money::fromAmount($eloquentTransaction->balance_after, $eloquentTransaction->wallet->currency ?? 'USD'),
+            amount: Money::fromAmount((float) $eloquentTransaction->amount, $eloquentTransaction->wallet?->currency ?? 'KHR'),
+            balanceAfter: Money::fromAmount((float) $eloquentTransaction->balance_after, $eloquentTransaction->wallet?->currency ?? 'KHR'),
             reference: $eloquentTransaction->reference,
             description: $eloquentTransaction->description,
+            status: TransactionStatus::from($eloquentTransaction->status),
             metadata: $eloquentTransaction->metadata ?? [],
             relatedTransactionId: $eloquentTransaction->related_transaction_id,
-            orderId: $eloquentTransaction->order_id
+            orderId: $eloquentTransaction->order_id,
+            createdAt: $eloquentTransaction->created_at,
+            updatedAt: $eloquentTransaction->updated_at
         );
     }
 

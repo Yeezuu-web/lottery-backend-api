@@ -36,6 +36,21 @@ interface AgentRepositoryInterface
     public function getHierarchyDownlines(int $agentId): array;
 
     /**
+     * Get direct downlines with wallet data
+     */
+    public function getDirectDownlinesWithWallets(int $agentId): array;
+
+    /**
+     * Get hierarchy downlines with wallet data
+     */
+    public function getHierarchyDownlinesWithWallets(int $agentId): array;
+
+    /**
+     * Get wallet data for an agent
+     */
+    public function getAgentWallets(int $agentId): array;
+
+    /**
      * Get agents by upline ID
      */
     public function getByUplineId(int $uplineId): array;

@@ -31,7 +31,7 @@ final class CreditWalletRequest extends FormRequest
                 'string',
                 Rule::in($creditTypes),
             ],
-            'reference' => 'required|string|max:255|unique:wallet_transactions,reference',
+            'reference' => 'sometimes|string|max:255|unique:wallet_transactions,reference',
             'description' => 'required|string|max:1000',
             'metadata' => 'sometimes|array',
             'order_id' => 'sometimes|integer|min:1',
@@ -75,8 +75,8 @@ final class CreditWalletRequest extends FormRequest
 
     public function getAmount(): Money
     {
-        return Money::fromFloat(
-            $this->input('amount'),
+        return Money::fromAmount(
+            (float) $this->input('amount'),
             $this->input('currency', 'KHR')
         );
     }
@@ -86,7 +86,7 @@ final class CreditWalletRequest extends FormRequest
         return TransactionType::from($this->input('transaction_type'));
     }
 
-    public function getReference(): string
+    public function getReference(): ?string
     {
         return $this->input('reference');
     }
@@ -115,12 +115,6 @@ final class CreditWalletRequest extends FormRequest
     {
         $this->merge([
             'currency' => $this->currency ?? 'KHR',
-            'reference' => $this->reference ?? $this->generateReference(),
         ]);
-    }
-
-    private function generateReference(): string
-    {
-        return 'CR_'.time().'_'.mt_rand(100000, 999999);
     }
 }

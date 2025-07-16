@@ -10,6 +10,7 @@ use App\Application\Order\Contracts\OrderRepositoryInterface;
 use App\Application\Order\Contracts\WalletServiceInterface;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Agent\Models\Agent;
+use App\Domain\AgentSettings\Contracts\BettingLimitValidationServiceInterface;
 use App\Domain\Order\Events\CartSubmitted;
 use App\Domain\Order\Events\OrderPlaced;
 use App\Domain\Order\Exceptions\CartException;
@@ -24,7 +25,8 @@ final readonly class SubmitCartUseCase
         private CartRepositoryInterface $cartRepository,
         private OrderRepositoryInterface $orderRepository,
         private AgentRepositoryInterface $agentRepository,
-        private WalletServiceInterface $walletService
+        private WalletServiceInterface $walletService,
+        private BettingLimitValidationServiceInterface $bettingLimitValidationService
     ) {}
 
     public function execute(SubmitCartCommand $command): array
@@ -49,24 +51,27 @@ final readonly class SubmitCartUseCase
         // 4. Calculate total amount
         $totalAmount = $this->calculateTotalAmount($cartItems);
 
-        // 5. Validate wallet balance
+        // 5. Re-validate all betting limits for cart submission
+        $this->validateCartLimits($command->agentId(), $cartItems);
+
+        // 6. Validate wallet balance
         if (! $this->walletService->hasEnoughBalance($agent, $totalAmount)) {
             $balance = $this->walletService->getBalance($agent);
             throw OrderException::insufficientBalance($totalAmount->amount(), $balance->amount());
         }
 
-        // 6. Generate group ID for this submission
+        // 7. Generate group ID for this submission
         $groupId = GroupId::generate();
 
-        // 7. Create orders from cart items
+        // 8. Create orders from cart items
         $orders = $this->createOrdersFromCart($agent, $cartItems, $groupId);
 
-        // 8. Begin transaction
-        return $this->orderRepository->transaction(function () use ($agent, $orders, $totalAmount, $groupId): array {
-            // 9. Deduct wallet balance
+        // 9. Begin transaction
+        return $this->orderRepository->transaction(function () use ($agent, $orders, $totalAmount, $groupId, $cartItems): array {
+            // 10. Deduct wallet balance
             $this->walletService->deductBalance($agent, $totalAmount, 'Cart submission - Group: '.$groupId->value());
 
-            // 10. Save orders
+            // 11. Save orders
             $orderIds = [];
             foreach ($orders as $order) {
                 $savedOrder = $this->orderRepository->save($order);
@@ -76,7 +81,7 @@ final readonly class SubmitCartUseCase
                 $orderPlacedEvent = OrderPlaced::now($savedOrder);
             }
 
-            // 11. Accept orders (change status to accepted)
+            // 12. Accept orders (change status to accepted)
             $acceptedOrders = [];
             foreach ($orders as $order) {
                 $acceptedOrder = $order->accept();
@@ -84,13 +89,16 @@ final readonly class SubmitCartUseCase
                 $acceptedOrders[] = $acceptedOrder;
             }
 
-            // 12. Clear cart
+            // 13. Record usage in agent settings cache after successful submission
+            $this->recordBettingUsage($agent->id(), $cartItems);
+
+            // 14. Clear cart
             $this->cartRepository->clearCart($agent);
 
-            // 13. Emit cart submitted event
+            // 15. Emit cart submitted event
             $cartSubmittedEvent = CartSubmitted::now($agent->id(), $groupId, $orderIds, $totalAmount);
 
-            // 14. Return result
+            // 16. Return result
             return [
                 'success' => true,
                 'group_id' => $groupId->value(),
@@ -105,6 +113,46 @@ final readonly class SubmitCartUseCase
                 ],
             ];
         });
+    }
+
+    private function validateCartLimits(int $agentId, array $cartItems): void
+    {
+        foreach ($cartItems as $cartItem) {
+            $betData = $cartItem['bet_data'];
+            $expandedNumbers = $cartItem['expanded_numbers'] ?? [];
+            $totalAmount = $cartItem['total_amount'] ?? 0;
+
+            // Extract game type from bet data
+            $gameType = $betData->type() ?? '';
+
+            // Validate this cart item against agent settings
+            $this->bettingLimitValidationService->validateBet(
+                $agentId,
+                $gameType,
+                $expandedNumbers,
+                (int) $totalAmount
+            );
+        }
+    }
+
+    private function recordBettingUsage(int $agentId, array $cartItems): void
+    {
+        foreach ($cartItems as $cartItem) {
+            $betData = $cartItem['bet_data'];
+            $expandedNumbers = $cartItem['expanded_numbers'] ?? [];
+            $totalAmount = $cartItem['total_amount'] ?? 0;
+
+            // Extract game type from bet data
+            $gameType = $betData->type() ?? '';
+
+            // Record usage for this cart item
+            $this->bettingLimitValidationService->recordUsage(
+                $agentId,
+                $gameType,
+                $expandedNumbers,
+                (int) $totalAmount
+            );
+        }
     }
 
     private function calculateTotalAmount(array $cartItems): \App\Domain\Wallet\ValueObjects\Money

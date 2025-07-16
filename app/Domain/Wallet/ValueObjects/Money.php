@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Wallet\ValueObjects;
 
 use App\Shared\Exceptions\ValidationException;
+use JsonSerializable;
 use Stringable;
 
-final readonly class Money implements Stringable
+final readonly class Money implements JsonSerializable, Stringable
 {
     private function __construct(
         private float $amount,
@@ -133,6 +134,11 @@ final readonly class Money implements Stringable
             'amount' => $this->amount,
             'currency' => $this->currency,
         ];
+    }
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 
     private function ensureSameCurrency(self $other): void

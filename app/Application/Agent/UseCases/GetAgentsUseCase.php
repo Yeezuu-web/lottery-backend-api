@@ -33,19 +33,20 @@ final readonly class GetAgentsUseCase
             throw AgentException::agentInactive($viewer->username()->value());
         }
 
-        // Determine which agents to get
-        $agents = $this->getAgentsForViewer($viewer, $command);
+        // Determine which agents to get (with wallet data)
+        $agentsWithWallets = $this->getAgentsWithWalletsForViewer($viewer, $command);
 
         // Convert to response DTOs
         $agentResponses = [];
-        foreach ($agents as $agent) {
-            $statistics = $this->agentDomainService->getAgentStatistics($agent);
+        foreach ($agentsWithWallets as $agentData) {
+            $agent = $agentData['agent'];
+            $wallets = $agentData['wallets'];
             $permissions = $this->getAgentPermissions($viewer, $agent);
-            $agentResponses[] = AgentResponse::fromDomain($agent, $permissions, $statistics);
+            $agentResponses[] = AgentResponse::fromDomain($agent, $permissions, [], $wallets);
         }
 
-        // Get total count for pagination
-        $total = $this->getTotalCount($viewer, $command);
+        // Get total count for pagination (use existing data instead of duplicate query)
+        $total = count($agentsWithWallets);
 
         // Prepare metadata
         $metadata = [
@@ -71,9 +72,9 @@ final readonly class GetAgentsUseCase
     }
 
     /**
-     * Get agents that the viewer can see
+     * Get agents with wallet data that the viewer can see
      */
-    private function getAgentsForViewer(Agent $viewer, GetAgentsCommand $command): array
+    private function getAgentsWithWalletsForViewer(Agent $viewer, GetAgentsCommand $command): array
     {
         // If targeting specific agent, get their downlines
         if ($command->getTargetAgentId() !== null) {
@@ -90,28 +91,16 @@ final readonly class GetAgentsUseCase
                 );
             }
 
-            // Get downlines of the target agent
+            // Get downlines of the target agent with wallet data
             return $command->isDirectOnly()
-                ? $this->agentRepository->getDirectDownlines($targetAgent->id())
-                : $this->agentRepository->getHierarchyDownlines($targetAgent->id());
+                ? $this->agentRepository->getDirectDownlinesWithWallets($targetAgent->id())
+                : $this->agentRepository->getHierarchyDownlinesWithWallets($targetAgent->id());
         }
 
-        // Get viewer's own downlines
+        // Get viewer's own downlines with wallet data
         return $command->isDirectOnly()
-            ? $this->agentRepository->getDirectDownlines($viewer->id())
-            : $this->agentRepository->getHierarchyDownlines($viewer->id());
-    }
-
-    /**
-     * Get total count for pagination
-     */
-    private function getTotalCount(Agent $viewer, GetAgentsCommand $command): int
-    {
-        // For now, return the count based on the actual query
-        // In a real implementation, you'd have a separate count query
-        $agents = $this->getAgentsForViewer($viewer, $command);
-
-        return count($agents);
+            ? $this->agentRepository->getDirectDownlinesWithWallets($viewer->id())
+            : $this->agentRepository->getHierarchyDownlinesWithWallets($viewer->id());
     }
 
     /**

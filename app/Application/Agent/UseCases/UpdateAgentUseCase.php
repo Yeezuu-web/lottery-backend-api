@@ -67,10 +67,10 @@ final readonly class UpdateAgentUseCase
         // Update the agent
         $agent = $this->agentRepository->save($updateData);
 
-        // Get agent statistics
-        $statistics = $this->agentDomainService->getAgentStatistics($agent);
+        // Get wallet data
+        $wallets = $this->agentRepository->getAgentWallets($agent->id());
 
         // Return response
-        return AgentResponse::fromDomain($agent, [], $statistics);
+        return AgentResponse::fromDomain($agent, [], [], $wallets);
     }
 }

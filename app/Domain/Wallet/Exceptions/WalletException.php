@@ -14,6 +14,11 @@ final class WalletException extends Exception
         return new self(sprintf('Wallet with ID %d not found', $walletId));
     }
 
+    public static function notFoundWallet(): self
+    {
+        return new self('Wallet for this user is not found.');
+    }
+
     public static function alreadyExists(int $ownerId, string $walletType): self
     {
         return new self(sprintf('Wallet of type %s already exists for owner %d', $walletType, $ownerId));

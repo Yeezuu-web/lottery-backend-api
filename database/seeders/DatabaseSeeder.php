@@ -17,6 +17,7 @@ final class DatabaseSeeder extends Seeder
         $this->call([
             CreateAgentSeeder::class,
             PayoutProfileTemplatesSeeder::class,
+            PermissionsSeeder::class,
         ]);
     }
 }

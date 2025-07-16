@@ -8,11 +8,16 @@ use App\Application\Auth\DTOs\OperationResponse;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Domain\Auth\Services\AuthenticationDomainService;
+use App\Domain\Auth\Services\DatabaseAuthorizationService;
 use App\Domain\Auth\ValueObjects\JWTToken;
 
 final readonly class GetUserProfileUseCase
 {
-    public function __construct(private AgentRepositoryInterface $agentRepository, private AuthenticationDomainService $authDomainService) {}
+    public function __construct(
+        private AgentRepositoryInterface $agentRepository,
+        private AuthenticationDomainService $authDomainService,
+        private DatabaseAuthorizationService $authorizationService
+    ) {}
 
     /**
      * Execute get user profile workflow
@@ -33,7 +38,11 @@ final readonly class GetUserProfileUseCase
         // 3. Apply domain business rules (domain validation)
         $this->authDomainService->validateAuthentication($agent, $audience);
 
-        // 4. Return profile data
+        // 4. Get permissions from database
+        $permissions = $this->authorizationService->getAgentPermissions($agent->id());
+        $permissionChain = $this->authorizationService->getPermissionInheritanceChain($agent->id());
+
+        // 5. Return profile data with permissions
         return OperationResponse::success('Profile retrieved successfully', [
             'agent' => [
                 'id' => $agent->id(),
@@ -41,9 +50,12 @@ final readonly class GetUserProfileUseCase
                 'email' => $agent->email(),
                 'name' => $agent->name(),
                 'agent_type' => $agent->agentType()->value(),
+                'status' => $agent->status(),
                 'is_active' => $agent->isActive(),
                 'created_at' => $agent->createdAt()?->format('c'),
                 'updated_at' => $agent->updatedAt()?->format('c'),
+                'permissions' => $permissions,
+                'permission_inheritance' => $permissionChain,
             ],
         ]);
     }

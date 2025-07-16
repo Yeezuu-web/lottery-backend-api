@@ -15,6 +15,8 @@ interface WalletRepositoryInterface
 
     public function findByOwnerIdAndType(int $ownerId, WalletType $walletType): ?Wallet;
 
+    public function findByOwnerIdAndTypeWithLock(int $ownerId, WalletType $walletType): ?Wallet;
+
     public function save(Wallet $wallet): Wallet;
 
     public function delete(int $walletId): bool;

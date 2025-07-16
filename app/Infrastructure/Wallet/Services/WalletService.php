@@ -10,7 +10,9 @@ use App\Application\Wallet\Commands\DebitWalletCommand;
 use App\Application\Wallet\Commands\TransferFundsCommand;
 use App\Application\Wallet\Contracts\TransactionRepositoryInterface;
 use App\Application\Wallet\Contracts\WalletRepositoryInterface;
+use App\Application\Wallet\Contracts\WalletServiceInterface;
 use App\Application\Wallet\Responses\WalletOperationResponse;
+use App\Application\Wallet\Services\InterAgentTransferService;
 use App\Application\Wallet\UseCases\CreateWalletUseCase;
 use App\Application\Wallet\UseCases\CreditWalletUseCase;
 use App\Application\Wallet\UseCases\DebitWalletUseCase;
@@ -23,13 +25,14 @@ use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-final readonly class WalletService
+final readonly class WalletService implements WalletServiceInterface
 {
     public function __construct(
         private WalletRepositoryInterface $walletRepository,
         private TransactionRepositoryInterface $transactionRepository,
         private CreateWalletUseCase $createWalletUseCase,
-        private CreditWalletUseCase $creditWalletUseCase
+        private CreditWalletUseCase $creditWalletUseCase,
+        private InterAgentTransferService $interAgentTransferService
     ) {}
 
     /**
@@ -131,24 +134,63 @@ final readonly class WalletService
                     throw WalletException::notFound($command->toWalletId);
                 }
 
-                // Check if transfer is allowed between wallet types
-                if (! $fromWallet->getWalletType()->canTransferTo($toWallet->getWalletType())) {
-                    throw WalletException::transferNotAllowed(
-                        $fromWallet->getWalletType()->value,
-                        $toWallet->getWalletType()->value
-                    );
-                }
+                // Enhanced validation for inter-agent transfers
+                $transferMetadata = null;
+                if ($command->isInterAgentTransfer()) {
+                    // Validate inter-agent transfer with business rules
+                    $transferMetadata = $this->interAgentTransferService->validateInterAgentTransfer($command);
 
-                // Check currency compatibility
-                if ($fromWallet->getCurrency() !== $toWallet->getCurrency()) {
-                    throw WalletException::currencyMismatch(
-                        $fromWallet->getCurrency(),
-                        $toWallet->getCurrency()
-                    );
+                    Log::info('Inter-agent transfer validated', [
+                        'from_agent' => $transferMetadata['from_agent']->username()->value(),
+                        'to_agent' => $transferMetadata['to_agent']->username()->value(),
+                        'initiator' => $transferMetadata['initiator_agent']->username()->value(),
+                        'transfer_type' => $command->transferType,
+                        'relationship' => $transferMetadata['transfer_relationship'],
+                    ]);
+                } else {
+                    // Standard wallet-to-wallet validation (same owner)
+                    if ($fromWallet->getOwnerId() !== $toWallet->getOwnerId()) {
+                        throw new WalletException('Cross-agent transfers require initiator agent ID');
+                    }
+
+                    // Check if transfer is allowed between wallet types
+                    if (! $fromWallet->getWalletType()->canTransferTo($toWallet->getWalletType())) {
+                        throw WalletException::transferNotAllowed(
+                            $fromWallet->getWalletType()->value,
+                            $toWallet->getWalletType()->value
+                        );
+                    }
+
+                    // Check currency compatibility
+                    if ($fromWallet->getCurrency() !== $toWallet->getCurrency()) {
+                        throw WalletException::currencyMismatch(
+                            $fromWallet->getCurrency(),
+                            $toWallet->getCurrency()
+                        );
+                    }
                 }
 
                 // Generate transfer reference
                 $transferRef = 'TRF_'.time().'_'.$command->fromWalletId.'_'.$command->toWalletId;
+
+                // Prepare enhanced metadata
+                $baseMetadata = [
+                    'transfer_type' => 'outgoing',
+                    'counterpart_wallet_id' => $command->toWalletId,
+                    'transfer_reference' => $transferRef,
+                ];
+
+                // Add inter-agent transfer metadata if applicable
+                if ($transferMetadata !== null) {
+                    $baseMetadata = array_merge($baseMetadata, [
+                        'inter_agent_transfer' => true,
+                        'from_agent_id' => $transferMetadata['from_agent']->id(),
+                        'to_agent_id' => $transferMetadata['to_agent']->id(),
+                        'initiator_agent_id' => $transferMetadata['initiator_agent']->id(),
+                        'transfer_relationship' => $transferMetadata['transfer_relationship'],
+                        'business_transfer_type' => $command->transferType,
+                    ]);
+                }
 
                 // Debit from source wallet
                 $debitCommand = new DebitWalletCommand(
@@ -157,11 +199,7 @@ final readonly class WalletService
                     transactionType: TransactionType::TRANSFER_OUT,
                     reference: $transferRef.'_OUT',
                     description: $command->description.' (Transfer Out)',
-                    metadata: array_merge($command->metadata ?? [], [
-                        'transfer_type' => 'outgoing',
-                        'counterpart_wallet_id' => $command->toWalletId,
-                        'transfer_reference' => $transferRef,
-                    ]),
+                    metadata: array_merge($command->metadata ?? [], $baseMetadata),
                     orderId: $command->orderId
                 );
 
@@ -172,6 +210,25 @@ final readonly class WalletService
                     throw new WalletException('Failed to debit source wallet: '.$debitResult->message);
                 }
 
+                // Prepare incoming metadata
+                $incomingMetadata = [
+                    'transfer_type' => 'incoming',
+                    'counterpart_wallet_id' => $command->fromWalletId,
+                    'transfer_reference' => $transferRef,
+                ];
+
+                // Add inter-agent transfer metadata if applicable
+                if ($transferMetadata !== null) {
+                    $incomingMetadata = array_merge($incomingMetadata, [
+                        'inter_agent_transfer' => true,
+                        'from_agent_id' => $transferMetadata['from_agent']->id(),
+                        'to_agent_id' => $transferMetadata['to_agent']->id(),
+                        'initiator_agent_id' => $transferMetadata['initiator_agent']->id(),
+                        'transfer_relationship' => $transferMetadata['transfer_relationship'],
+                        'business_transfer_type' => $command->transferType,
+                    ]);
+                }
+
                 // Credit to destination wallet
                 $creditCommand = new CreditWalletCommand(
                     walletId: $command->toWalletId,
@@ -179,11 +236,7 @@ final readonly class WalletService
                     transactionType: TransactionType::TRANSFER_IN,
                     reference: $transferRef.'_IN',
                     description: $command->description.' (Transfer In)',
-                    metadata: array_merge($command->metadata ?? [], [
-                        'transfer_type' => 'incoming',
-                        'counterpart_wallet_id' => $command->fromWalletId,
-                        'transfer_reference' => $transferRef,
-                    ]),
+                    metadata: array_merge($command->metadata ?? [], $incomingMetadata),
                     orderId: $command->orderId,
                     relatedTransactionId: $debitResult->data['transaction']['id']
                 );
@@ -264,13 +317,15 @@ final readonly class WalletService
                         'currency' => $currency,
                         'total_balance' => 0,
                         'total_locked' => 0,
-                        'total_available' => 0,
                     ];
                 }
 
-                $totalsByCurrency[$currency]['total_balance'] += $balance['balance'];
-                $totalsByCurrency[$currency]['total_locked'] += $balance['locked_balance'];
-                $totalsByCurrency[$currency]['total_available'] += $balance['available_balance'];
+                // Extract amounts from Money objects
+                $balanceAmount = $balance['balance']->amount();
+                $lockedAmount = $balance['locked_balance']->amount();
+
+                $totalsByCurrency[$currency]['total_balance'] += $balanceAmount;
+                $totalsByCurrency[$currency]['total_locked'] += $lockedAmount;
             }
 
             $summary['totals_by_currency'] = array_values($totalsByCurrency);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Agent;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 final class GetAgentsRequest extends FormRequest
@@ -78,17 +79,18 @@ final class GetAgentsRequest extends FormRequest
     {
         // Check for explicit viewer_id parameter first
         if ($this->has('viewer_id')) {
-            return $this->input('viewer_id');
+            return (int) $this->input('viewer_id');
         }
 
         // Get from JWT token stored by UplineAuthMiddleware
         $agentId = $this->attributes->get('agent_id');
+
         if ($agentId) {
-            return $agentId;
+            return (int) $agentId;
         }
 
         // Fallback to Laravel auth (for other auth methods)
-        return auth()->id() ?? 0;
+        return Auth::id();
     }
 
     /**
@@ -96,7 +98,11 @@ final class GetAgentsRequest extends FormRequest
      */
     public function getTargetAgentId(): ?int
     {
-        return $this->input('target_agent_id');
+        if ($this->has('target_agent_id')) {
+            return (int) $this->input('target_agent_id');
+        }
+
+        return null;
     }
 
     /**
@@ -112,7 +118,7 @@ final class GetAgentsRequest extends FormRequest
      */
     public function isDirectOnly(): bool
     {
-        return $this->input('direct_only', true);
+        return (bool) $this->input('direct_only', true);
     }
 
     /**
@@ -120,7 +126,7 @@ final class GetAgentsRequest extends FormRequest
      */
     public function getPage(): int
     {
-        return $this->input('page', 1);
+        return (int) $this->input('page', 1);
     }
 
     /**
@@ -128,6 +134,6 @@ final class GetAgentsRequest extends FormRequest
      */
     public function getPerPage(): int
     {
-        return $this->input('per_page', 20);
+        return (int) $this->input('per_page', 20);
     }
 }

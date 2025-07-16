@@ -38,7 +38,8 @@ final class MemberAuthController extends Controller
             $command = new AuthenticateUserCommand(
                 $request->username,
                 $request->password,
-                'member'
+                'member',
+                $request
             );
 
             $result = $this->authenticateUserUseCase->execute($command);
@@ -76,7 +77,7 @@ final class MemberAuthController extends Controller
             );
 
         } catch (AuthenticationException $e) {
-            return $this->error($e->getMessage(), 401);
+            return $this->error($e->getMessage(), $e->getCode());
         } catch (Exception $e) {
             logger()->error('Authentication failed: '.$e->getMessage());
 
@@ -132,7 +133,7 @@ final class MemberAuthController extends Controller
             );
 
         } catch (AuthenticationException $e) {
-            return $this->error($e->getMessage(), 401);
+            return $this->error($e->getMessage(), $e->getCode());
         } catch (Exception $e) {
             logger()->error('Token refresh failed: '.$e->getMessage());
 
@@ -163,7 +164,7 @@ final class MemberAuthController extends Controller
             );
 
         } catch (AuthenticationException $e) {
-            return $this->error($e->getMessage(), 401);
+            return $this->error($e->getMessage(), $e->getCode());
         } catch (Exception $e) {
             logger()->error('Logout failed: '.$e->getMessage());
 
@@ -198,7 +199,7 @@ final class MemberAuthController extends Controller
             return $this->success($responseData['data'], $responseData['message']);
 
         } catch (AuthenticationException $e) {
-            return $this->error($e->getMessage(), 401);
+            return $this->error($e->getMessage(), $e->getCode());
         } catch (Exception $e) {
             logger()->error('Profile retrieval failed: '.$e->getMessage());
 

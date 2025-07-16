@@ -9,8 +9,6 @@ use App\Application\Auth\DTOs\LogoutUserCommand;
 use App\Application\Auth\DTOs\RefreshTokenCommand;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Agent\Models\Agent;
-use App\Domain\Agent\ValueObjects\AgentType;
-use App\Domain\Agent\ValueObjects\Username;
 use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\ValueObjects\JWTToken;
@@ -32,18 +30,20 @@ final class AuthTestHelper
         string $email = 'test@example.com',
         string $name = 'Test User',
         string $agentType = 'company',
+        string $status = 'active',
         bool $isActive = true
     ): Agent {
         // For non-company agents, provide a parent ID
         $uplineId = ($agentType === 'company') ? null : 1;
 
-        return new Agent(
+        return Agent::create(
             $id,
-            new Username($username),
-            new AgentType($agentType),
+            $username,
+            $agentType,
             $uplineId,
             $name,
             $email,
+            $status,
             $isActive,
             Carbon::now()->toDateTimeImmutable(),
             Carbon::now()->toDateTimeImmutable()

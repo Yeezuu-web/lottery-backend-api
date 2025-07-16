@@ -31,14 +31,4 @@ Route::prefix('agent-settings')->group(function (): void {
         ->name('agent-settings.update')
         ->where('agentId', '[0-9]+');
 
-    // Update commission rate only
-    Route::patch('/{agentId}/commission-rate', [AgentSettingsController::class, 'updateCommissionRate'])
-        ->name('agent-settings.update-commission-rate')
-        ->where('agentId', '[0-9]+');
-
-    // Update sharing rate only
-    Route::patch('/{agentId}/sharing-rate', [AgentSettingsController::class, 'updateSharingRate'])
-        ->name('agent-settings.update-sharing-rate')
-        ->where('agentId', '[0-9]+');
-
 });

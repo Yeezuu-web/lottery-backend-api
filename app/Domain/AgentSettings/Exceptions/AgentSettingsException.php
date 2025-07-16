@@ -49,6 +49,66 @@ final class AgentSettingsException extends DomainException
         return new self(sprintf('Invalid sharing rate: %s%%. Must be between 0 and 100', $rate));
     }
 
+    public static function invalidDailyLimit(float $amount): self
+    {
+        return new self(sprintf('Invalid daily limit: %.2f KHR. Must be positive', $amount));
+    }
+
+    public static function invalidGameType(string $gameType): self
+    {
+        return new self(sprintf('Invalid game type: %s. Must be 2D or 3D', $gameType));
+    }
+
+    public static function invalidNumberLimits(string $gameType): self
+    {
+        return new self(sprintf('Invalid number limits for game type: %s. Must be array', $gameType));
+    }
+
+    public static function invalidNumberLimit(string $gameType, string $number, mixed $limit): self
+    {
+        return new self(
+            sprintf(
+                'Invalid number limit for %s number %s: %s. Must be positive number',
+                $gameType,
+                $number,
+                $limit
+            )
+        );
+    }
+
+    public static function dailyLimitExceeded(int $agentId, int $limit, int $currentUsage, int $betAmount): self
+    {
+        return new self(
+            sprintf(
+                'Daily limit exceeded for agent %d. Current usage: %d KHR, Bet amount: %d KHR, Limit: %d KHR',
+                $agentId,
+                $currentUsage,
+                $betAmount,
+                $limit
+            )
+        );
+    }
+
+    public static function numberLimitExceeded(int $agentId, string $gameType, string $number, int $limit, int $currentUsage, int $betAmount): self
+    {
+        return new self(
+            sprintf(
+                'Number limit exceeded for agent %d on %s number %s. Current usage: %d KHR, Bet amount: %d KHR, Limit: %d KHR',
+                $agentId,
+                $gameType,
+                $number,
+                $currentUsage,
+                $betAmount,
+                $limit
+            )
+        );
+    }
+
+    public static function numberBlocked(int $agentId, string $number): self
+    {
+        return new self(sprintf('Number %s is blocked for agent %d', $number, $agentId));
+    }
+
     public static function cannotInheritFromInactiveAgent(int $sourceAgentId): self
     {
         return new self('Cannot inherit settings from inactive agent ID '.$sourceAgentId);

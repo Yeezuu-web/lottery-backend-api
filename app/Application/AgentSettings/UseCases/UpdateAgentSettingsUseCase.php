@@ -9,7 +9,8 @@ use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
 use App\Application\AgentSettings\Responses\AgentSettingsOperationResponse;
 use App\Application\AgentSettings\Responses\AgentSettingsResponse;
 use App\Domain\AgentSettings\Exceptions\AgentSettingsException;
-use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
+use App\Domain\AgentSettings\ValueObjects\DailyLimit;
+use App\Domain\AgentSettings\ValueObjects\NumberLimit;
 use Exception;
 
 final readonly class UpdateAgentSettingsUseCase
@@ -28,23 +29,38 @@ final readonly class UpdateAgentSettingsUseCase
                 throw AgentSettingsException::notFound($command->agentId);
             }
 
-            // Update payout profile if provided
-            if ($command->payoutProfile !== null) {
-                $payoutProfile = PayoutProfile::fromArray($command->payoutProfile);
-                $agentSettings = $agentSettings->updatePayoutProfile($payoutProfile);
+            // Update daily limit if provided
+            if ($command->dailyLimit !== null) {
+                $dailyLimit = DailyLimit::create($command->dailyLimit);
+                $agentSettings = $agentSettings->updateDailyLimit($dailyLimit);
             }
 
-            // Update commission and sharing rates if provided
-            if ($command->commissionRate !== null || $command->sharingRate !== null) {
-                $agentSettings = $agentSettings->updateCommissionSharingRates(
-                    $command->commissionRate,
-                    $command->sharingRate
-                );
+            // Update max commission if provided
+            if ($command->maxCommission !== null) {
+                $agentSettings = $agentSettings->updateMaxCommission($command->maxCommission);
             }
 
-            // Update other settings as needed
-            // Note: For simplicity, we're only handling commission/sharing/payout profile updates
-            // Additional properties like betting limits, blocked numbers, etc. would need similar handling
+            // Update max share if provided
+            if ($command->maxShare !== null) {
+                $agentSettings = $agentSettings->updateMaxShare($command->maxShare);
+            }
+
+            // Update number limits if provided
+            if ($command->numberLimits !== null) {
+                $numberLimits = [];
+                foreach ($command->numberLimits as $gameType => $limits) {
+                    foreach ($limits as $number => $limit) {
+                        $numberLimits[] = NumberLimit::create($gameType, (string) $number, (int) $limit);
+                    }
+                }
+
+                $agentSettings = $agentSettings->updateNumberLimits($numberLimits);
+            }
+
+            // Update blocked numbers if provided
+            if ($command->blockedNumbers !== null) {
+                $agentSettings = $agentSettings->updateBlockedNumbers($command->blockedNumbers);
+            }
 
             // Save updated settings
             $savedSettings = $this->repository->save($agentSettings);
@@ -55,14 +71,10 @@ final readonly class UpdateAgentSettingsUseCase
                 data: AgentSettingsResponse::fromDomain($savedSettings)
             );
         } catch (AgentSettingsException $e) {
-            return AgentSettingsOperationResponse::failure(
-                message: $e->getMessage(),
-                errors: ['agent_settings' => $e->getMessage()]
-            );
+            return AgentSettingsOperationResponse::error($e->getMessage());
         } catch (Exception $e) {
-            return AgentSettingsOperationResponse::failure(
-                message: 'Failed to update agent settings',
-                errors: ['system' => $e->getMessage()]
+            return AgentSettingsOperationResponse::error(
+                'Failed to update agent settings: '.$e->getMessage()
             );
         }
     }

@@ -81,6 +81,11 @@ final readonly class JWTToken implements Stringable
         return $this->getType() === 'refresh';
     }
 
+    public function id(): ?string
+    {
+        return $this->payload['id'];
+    }
+
     public function toArray(): array
     {
         return [

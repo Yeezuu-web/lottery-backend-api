@@ -8,26 +8,37 @@ final readonly class UpdateAgentSettingsCommand
 {
     public function __construct(
         public int $agentId,
-        public ?array $payoutProfile = null,
-        public ?float $commissionRate = null,
-        public ?float $sharingRate = null,
-        public ?array $bettingLimits = null,
-        public ?array $blockedNumbers = null,
-        public ?bool $autoSettlement = null,
-        public ?bool $isActive = null
+        public ?int $dailyLimit = null,
+        public ?float $maxCommission = null,
+        public ?float $maxShare = null,
+        public ?array $numberLimits = null,
+        public ?array $blockedNumbers = null
     ) {}
 
     public function toArray(): array
     {
-        return [
-            'agent_id' => $this->agentId,
-            'payout_profile' => $this->payoutProfile,
-            'commission_rate' => $this->commissionRate,
-            'sharing_rate' => $this->sharingRate,
-            'betting_limits' => $this->bettingLimits,
-            'blocked_numbers' => $this->blockedNumbers,
-            'auto_settlement' => $this->autoSettlement,
-            'is_active' => $this->isActive,
-        ];
+        $data = ['agent_id' => $this->agentId];
+
+        if ($this->dailyLimit !== null) {
+            $data['daily_limit'] = $this->dailyLimit;
+        }
+
+        if ($this->maxCommission !== null) {
+            $data['max_commission'] = $this->maxCommission;
+        }
+
+        if ($this->maxShare !== null) {
+            $data['max_share'] = $this->maxShare;
+        }
+
+        if ($this->numberLimits !== null) {
+            $data['number_limits'] = $this->numberLimits;
+        }
+
+        if ($this->blockedNumbers !== null) {
+            $data['blocked_numbers'] = $this->blockedNumbers;
+        }
+
+        return $data;
     }
 }

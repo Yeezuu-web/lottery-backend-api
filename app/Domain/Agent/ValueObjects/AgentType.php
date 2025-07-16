@@ -72,6 +72,7 @@ final class AgentType
             self::MASTER => 4,
             self::AGENT => 5,
             self::MEMBER => 6,
+            default => 0
         };
     }
 
@@ -154,14 +155,11 @@ final class AgentType
     }
 
     /**
-     * Check if this agent type can place bets
+     * Check if this agent type can place bets member only
      */
     public function canPlaceBets(): bool
     {
-        return in_array($this->value, [
-            self::AGENT,
-            self::MEMBER,
-        ]);
+        return $this->value === self::MEMBER;
     }
 
     /**

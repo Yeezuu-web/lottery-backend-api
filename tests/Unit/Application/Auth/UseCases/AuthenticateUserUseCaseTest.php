@@ -1,14 +1,17 @@
 <?php
 
 declare(strict_types=1);
+
 use App\Application\Auth\DTOs\AuthenticateUserResponse;
 use App\Application\Auth\UseCases\AuthenticateUserUseCase;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Agent\ValueObjects\Username;
 use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
+use App\Domain\Auth\Contracts\LoginAuditServiceInterface;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Exceptions\AuthenticationException;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Tests\Helpers\AuthTestHelper;
 
 beforeEach(function (): void {
@@ -16,12 +19,16 @@ beforeEach(function (): void {
     $this->tokenService = Mockery::mock(TokenServiceInterface::class);
     $this->authDomainService = Mockery::mock(AuthenticationDomainServiceInterface::class);
     $this->authInfrastructureService = Mockery::mock(AuthenticationServiceInterface::class);
+    $this->loginAuditService = Mockery::mock(LoginAuditServiceInterface::class);
+    $this->eventDispatcher = Mockery::mock(EventDispatcher::class);
 
     $this->useCase = new AuthenticateUserUseCase(
         $this->agentRepository,
         $this->tokenService,
         $this->authDomainService,
-        $this->authInfrastructureService
+        $this->authInfrastructureService,
+        $this->loginAuditService,
+        $this->eventDispatcher
     );
 });
 afterEach(function (): void {
@@ -60,6 +67,9 @@ test('successful authentication', function (): void {
     $this->authInfrastructureService->shouldReceive('storeRefreshToken')
         ->once()
         ->with($tokenPair->refreshToken());
+
+    // Event dispatching expectations - no events should be dispatched for requests without context
+    $this->eventDispatcher->shouldReceive('dispatch')->never();
 
     // Act
     $result = $this->useCase->execute($command);

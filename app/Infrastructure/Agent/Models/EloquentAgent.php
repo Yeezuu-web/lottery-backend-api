@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Agent\Models;
 
+use App\Domain\Auth\Models\AgentPermission;
+use App\Domain\Auth\Models\Permission;
 use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
 use App\Infrastructure\Order\Models\EloquentCart;
 use App\Infrastructure\Order\Models\EloquentOrder;
 use App\Infrastructure\Wallet\Models\EloquentWallet;
+use Database\Factories\Infrastructure\Agent\Models\EloquentAgentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -17,7 +21,9 @@ use Illuminate\Notifications\Notifiable;
 
 final class EloquentAgent extends Authenticatable
 {
+    /** @use HasFactory<EloquentAgentFactory> */
     use HasFactory;
+
     use Notifiable;
 
     protected $table = 'agents';
@@ -158,6 +164,56 @@ final class EloquentAgent extends Authenticatable
     public function settings(): HasOne
     {
         return $this->hasOne(EloquentAgentSettings::class, 'agent_id');
+    }
+
+    /**
+     * Get all permissions for this agent
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Permission::class,
+            'agent_permissions',
+            'agent_id',
+            'permission_id'
+        )
+            ->withPivot([
+                'granted_by',
+                'granted_at',
+                'expires_at',
+                'is_active',
+                'metadata',
+            ])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get active permissions for this agent
+     */
+    public function activePermissions(): BelongsToMany
+    {
+        return $this->permissions()
+            ->wherePivot('is_active', true)
+            ->where(function ($query): void {
+                $query->whereNull('agent_permissions.expires_at')
+                    ->orWhere('agent_permissions.expires_at', '>', now());
+            });
+    }
+
+    /**
+     * Get all agent permission records for this agent
+     */
+    public function agentPermissions(): HasMany
+    {
+        return $this->hasMany(AgentPermission::class, 'agent_id');
+    }
+
+    /**
+     * Get permissions granted by this agent
+     */
+    public function grantedPermissions(): HasMany
+    {
+        return $this->hasMany(AgentPermission::class, 'granted_by');
     }
 
     /**

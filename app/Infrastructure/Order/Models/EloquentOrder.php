@@ -15,7 +15,7 @@ final class EloquentOrder extends Model
 {
     use HasFactory;
 
-    protected $table = 'ca_orders';
+    protected $table = 'orders';
 
     protected $fillable = [
         'agent_id',

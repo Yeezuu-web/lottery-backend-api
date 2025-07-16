@@ -11,6 +11,7 @@ use App\Application\Agent\UseCases\GetAgentsUseCase;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Agent\CreateAgentRequest;
 use App\Http\Requests\Agent\GetAgentsRequest;
+use App\Traits\HasAuthorization;
 use App\Traits\HttpApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 
 final class AgentController extends Controller
 {
+    use HasAuthorization;
     use HttpApiResponse;
 
     public function __construct(
@@ -27,9 +29,15 @@ final class AgentController extends Controller
 
     /**
      * Get list of agents (direct downlines or drill-down)
+     *
+     * Authorization: This route is protected by 'authorize:manage_agents' middleware
+     * which automatically checks if the user has the 'manage_agents' permission
      */
     public function index(GetAgentsRequest $request): JsonResponse
     {
+        // Additional authorization check can be done here if needed
+        // $this->checkPermission('manage_agents');
+        // $this->checkAgentManagement($targetAgentId);
         $command = new GetAgentsCommand(
             viewerId: $request->getViewerId(),
             targetAgentId: $request->getTargetAgentId(),

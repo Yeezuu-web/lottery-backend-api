@@ -11,6 +11,7 @@ use App\Application\Order\Contracts\NumberExpansionServiceInterface;
 use App\Application\Order\Contracts\WalletServiceInterface;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Agent\Models\Agent;
+use App\Domain\AgentSettings\Contracts\BettingLimitValidationServiceInterface;
 use App\Domain\Order\Events\ItemAddedToCart;
 use App\Domain\Order\Exceptions\OrderException;
 use App\Domain\Order\ValueObjects\BetData;
@@ -23,7 +24,8 @@ final readonly class AddToCartUseCase
         private AgentRepositoryInterface $agentRepository,
         private NumberExpansionServiceInterface $numberExpansionService,
         private ChannelWeightServiceInterface $channelWeightService,
-        private WalletServiceInterface $walletService
+        private WalletServiceInterface $walletService,
+        private BettingLimitValidationServiceInterface $bettingLimitValidationService
     ) {}
 
     public function execute(AddToCartCommand $command): array
@@ -64,24 +66,32 @@ final readonly class AddToCartUseCase
         $totalAmount = $this->calculateTotalAmount($betData);
         $betData = $betData->withTotalAmount($totalAmount);
 
-        // 8. Validate wallet balance
+        // 8. Validate agent settings limits BEFORE checking wallet balance
+        $this->bettingLimitValidationService->validateBet(
+            $command->agentId(),
+            $command->type(),
+            $expandedNumbers,
+            (int) $totalAmount->amount()
+        );
+
+        // 9. Validate wallet balance
         if (! $this->walletService->hasEnoughBalance($agent, $totalAmount)) {
             $balance = $this->walletService->getBalance($agent);
             throw OrderException::insufficientBalance($totalAmount->amount(), $balance->amount());
         }
 
-        // 9. Check for duplicate items in cart
-        if ($this->cartRepository->hasExistingItem($agent, $betData)) {
-            throw OrderException::duplicateCartItem();
-        }
+        // 10. Check for duplicate items in cart -> Skipped
+        // if ($this->cartRepository->hasExistingItem($agent, $betData)) {
+        //     throw OrderException::duplicateCartItem();
+        // }
 
-        // 10. Add item to cart
+        // 11. Add item to cart
         $cartItem = $this->cartRepository->addItem($agent, $betData, $expandedNumbers, $channelWeights);
 
-        // 11. Emit domain event
+        // 12. Emit domain event
         $event = ItemAddedToCart::now($agent->id(), $betData, $expandedNumbers, $channelWeights);
 
-        // 12. Get updated cart summary
+        // 13. Get updated cart summary
         $cartSummary = $this->cartRepository->getCartSummary($agent);
 
         return [
@@ -108,12 +118,12 @@ final readonly class AddToCartUseCase
         $amount = Money::fromAmount($command->amount(), $command->currency());
 
         return new BetData(
-            $command->period(),
-            $command->type(),
-            $command->channels(),
-            $command->option(),
-            $command->number(),
-            $amount
+            period: $command->period(),
+            type: $command->type(),
+            channels: $command->channels(),
+            option: $command->option(),
+            number: $command->number(),
+            amount: $amount
         );
     }
 

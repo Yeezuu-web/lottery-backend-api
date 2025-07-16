@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Domain\Agent\ValueObjects\AgentType;
 use App\Domain\Agent\ValueObjects\Username;
 use App\Infrastructure\Agent\Models\EloquentAgent;
+use App\Infrastructure\Wallet\Services\WalletService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,6 +20,7 @@ final class CreateAgentSeeder extends Seeder
      */
     public function run(): void
     {
+        $walletService = app(WalletService::class);
         $companies = [];
 
         // Create 2 companies
@@ -32,6 +34,11 @@ final class CreateAgentSeeder extends Seeder
             );
         }
 
+        // Initialize wallets for all companies in KHR using Wallet Service
+        foreach ($companies as $company) {
+            $walletService->initializeWalletsForOwner($company->id, 'KHR');
+        }
+
         // Define agent hierarchy
         $levels = [
             AgentType::SUPER_SENIOR,
@@ -40,6 +47,9 @@ final class CreateAgentSeeder extends Seeder
             AgentType::AGENT,
             AgentType::MEMBER,
         ];
+
+        // store all downlines IDs in an array to create wallets for theme
+        $downlines = [];
 
         // Create downlines for each company
         foreach ($companies as $index => $company) {
@@ -62,7 +72,14 @@ final class CreateAgentSeeder extends Seeder
                     $currentUpline->id,
                     $phone
                 );
+
+                $downlines[] = $currentUpline->id;
             }
+        }
+
+        // Initialize wallets for all downlines in KHR using Wallet Service
+        foreach ($downlines as $downlineId) {
+            $walletService->initializeWalletsForOwner($downlineId, 'KHR');
         }
     }
 

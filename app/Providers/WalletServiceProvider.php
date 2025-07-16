@@ -7,12 +7,14 @@ namespace App\Providers;
 use App\Application\Wallet\Contracts\TransactionRepositoryInterface;
 // Domain Services
 use App\Application\Wallet\Contracts\WalletRepositoryInterface;
+use App\Application\Wallet\Services\InterAgentTransferService;
 use App\Application\Wallet\UseCases\CreateWalletUseCase;
 // Infrastructure Implementations
 use App\Application\Wallet\UseCases\CreditWalletUseCase;
 use App\Application\Wallet\UseCases\DebitWalletUseCase;
 use App\Application\Wallet\UseCases\GetWalletUseCase;
 // Application Use Cases
+use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Infrastructure\Wallet\Repositories\TransactionRepository;
 use App\Infrastructure\Wallet\Repositories\WalletRepository;
 use App\Infrastructure\Wallet\Services\WalletService;
@@ -56,14 +58,26 @@ final class WalletServiceProvider extends ServiceProvider
             $app->make(TransactionRepositoryInterface::class)
         ));
 
+        // Register Inter-Agent Transfer Service
+        $this->app->singleton(InterAgentTransferService::class, fn ($app): InterAgentTransferService => new InterAgentTransferService(
+            $app->make(WalletRepositoryInterface::class),
+            $app->make(AgentRepositoryInterface::class)
+        ));
+
         // Register Wallet Service
         $this->app->singleton(WalletService::class, fn ($app): WalletService => new WalletService(
             $app->make(WalletRepositoryInterface::class),
             $app->make(TransactionRepositoryInterface::class),
             $app->make(CreateWalletUseCase::class),
             $app->make(CreditWalletUseCase::class),
-            $app->make(GetWalletUseCase::class)
+            $app->make(InterAgentTransferService::class)
         ));
+
+        // Bind the interface to the service
+        $this->app->bind(
+            \App\Application\Wallet\Contracts\WalletServiceInterface::class,
+            WalletService::class
+        );
     }
 
     /**
@@ -87,6 +101,7 @@ final class WalletServiceProvider extends ServiceProvider
             DebitWalletUseCase::class,
             GetWalletUseCase::class,
             WalletService::class,
+            \App\Application\Wallet\Contracts\WalletServiceInterface::class,
         ];
     }
 }
