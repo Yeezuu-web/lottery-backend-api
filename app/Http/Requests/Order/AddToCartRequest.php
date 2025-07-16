@@ -48,7 +48,12 @@ final class AddToCartRequest extends FormRequest
             'option' => [
                 'required',
                 'string',
-                Rule::in(['none', 'X', '\\', '>', '\\|', '>|']),
+                function ($attr, $value, $fail): void {
+                    $valid = ['none', 'X', '\\', '>', '\\|', '>|'];
+                    if (! in_array($value, $valid, true)) {
+                        $fail(sprintf('The %s must be one of: ', $attr).implode(', ', $valid));
+                    }
+                },
             ],
             'number' => [
                 'required',

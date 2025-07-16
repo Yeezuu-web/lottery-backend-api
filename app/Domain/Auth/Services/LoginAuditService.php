@@ -6,6 +6,7 @@ namespace App\Domain\Auth\Services;
 
 use App\Domain\Agent\Models\Agent;
 use App\Domain\Auth\Contracts\LoginAuditRepositoryInterface;
+use App\Domain\Auth\Contracts\LoginAuditServiceInterface;
 use App\Domain\Auth\Models\LoginAudit;
 use App\Domain\Auth\ValueObjects\DeviceInfo;
 use App\Domain\Auth\ValueObjects\JWTToken;
@@ -13,7 +14,7 @@ use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-final readonly class LoginAuditService
+final readonly class LoginAuditService implements LoginAuditServiceInterface
 {
     public function __construct(
         private LoginAuditRepositoryInterface $loginAuditRepository

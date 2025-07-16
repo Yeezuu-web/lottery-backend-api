@@ -21,6 +21,7 @@ final class AgentController extends Controller
 {
     use HasAuthorization;
     use HttpApiResponse;
+
     public function __construct(
         private readonly CreateAgentUseCase $createAgentUseCase,
         private readonly GetAgentsUseCase $getAgentsUseCase

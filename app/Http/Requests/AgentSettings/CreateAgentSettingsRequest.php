@@ -17,21 +17,15 @@ final class CreateAgentSettingsRequest extends FormRequest
     {
         return [
             'agent_id' => 'required|integer|min:1',
-            'payout_profile' => 'nullable|array',
-            'payout_profile.game_2d' => 'nullable|numeric|min:0|max:1000',
-            'payout_profile.game_3d' => 'nullable|numeric|min:0|max:1000',
-            'payout_profile.game_4d' => 'nullable|numeric|min:0|max:1000',
-            'payout_profile.max_commission_sharing_rate' => 'nullable|numeric|min:0|max:100',
-            'commission_rate' => 'nullable|numeric|min:0|max:100',
-            'sharing_rate' => 'nullable|numeric|min:0|max:100',
-            'betting_limits' => 'nullable|array',
-            'betting_limits.*.game_type' => 'required_with:betting_limits|string',
-            'betting_limits.*.min_bet' => 'required_with:betting_limits|numeric|min:0',
-            'betting_limits.*.max_bet' => 'required_with:betting_limits|numeric|min:0',
+            'daily_limit' => 'nullable|integer|min:0',
+            'max_commission' => 'required|numeric|min:0|max:100',
+            'max_share' => 'required|numeric|min:0|max:100',
+            'number_limits' => 'nullable|array',
+            'number_limits.*.game_type' => 'required_with:number_limits|string|in:2D,3D',
+            'number_limits.*.number' => 'required_with:number_limits|string',
+            'number_limits.*.limit' => 'required_with:number_limits|integer|min:0',
             'blocked_numbers' => 'nullable|array',
             'blocked_numbers.*' => 'string',
-            'auto_settlement' => 'nullable|boolean',
-            'is_active' => 'nullable|boolean',
         ];
     }
 
@@ -40,45 +34,27 @@ final class CreateAgentSettingsRequest extends FormRequest
         return [
             'agent_id.required' => 'Agent ID is required',
             'agent_id.integer' => 'Agent ID must be an integer',
-            'agent_id.min' => 'Agent ID must be at least 1',
-            'commission_rate.numeric' => 'Commission rate must be a number',
-            'commission_rate.min' => 'Commission rate must be at least 0',
-            'commission_rate.max' => 'Commission rate cannot exceed 100',
-            'sharing_rate.numeric' => 'Sharing rate must be a number',
-            'sharing_rate.min' => 'Sharing rate must be at least 0',
-            'sharing_rate.max' => 'Sharing rate cannot exceed 100',
-            'payout_profile.array' => 'Payout profile must be an array',
-            'betting_limits.array' => 'Betting limits must be an array',
+            'agent_id.min' => 'Agent ID must be positive',
+            'daily_limit.integer' => 'Daily limit must be an integer',
+            'daily_limit.min' => 'Daily limit must be non-negative',
+            'max_commission.required' => 'Max commission rate is required',
+            'max_commission.numeric' => 'Max commission rate must be numeric',
+            'max_commission.min' => 'Max commission rate cannot be negative',
+            'max_commission.max' => 'Max commission rate cannot exceed 100%',
+            'max_share.required' => 'Max share rate is required',
+            'max_share.numeric' => 'Max share rate must be numeric',
+            'max_share.min' => 'Max share rate cannot be negative',
+            'max_share.max' => 'Max share rate cannot exceed 100%',
+            'number_limits.array' => 'Number limits must be an array',
+            'number_limits.*.game_type.required_with' => 'Game type is required for number limits',
+            'number_limits.*.game_type.in' => 'Game type must be either 2D or 3D',
+            'number_limits.*.number.required_with' => 'Number is required for number limits',
+            'number_limits.*.limit.required_with' => 'Limit amount is required for number limits',
+            'number_limits.*.limit.integer' => 'Limit amount must be an integer',
+            'number_limits.*.limit.min' => 'Limit amount must be non-negative',
             'blocked_numbers.array' => 'Blocked numbers must be an array',
+            'blocked_numbers.*.string' => 'Each blocked number must be a string',
         ];
-    }
-
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator): void {
-            // Custom validation: if both commission and sharing rates are provided,
-            // ensure they don't exceed reasonable limits when combined
-            $commissionRate = $this->getCommissionRate();
-            $sharingRate = $this->getSharingRate();
-
-            if ($commissionRate !== null && $sharingRate !== null) {
-                $total = $commissionRate + $sharingRate;
-                if ($total > 50) { // Default max combined rate
-                    $validator->errors()->add('commission_rate', 'Combined commission and sharing rates cannot exceed 50%');
-                }
-            }
-
-            // Validate payout profile structure if provided
-            if (! in_array($this->getPayoutProfile(), [null, []], true)) {
-                $profile = $this->getPayoutProfile();
-                $maxRate = $profile['max_commission_sharing_rate'] ?? 50;
-                $total = ($commissionRate ?? 0) + ($sharingRate ?? 0);
-
-                if ($total > $maxRate) {
-                    $validator->errors()->add('commission_rate', sprintf('Combined rates cannot exceed the payout profile maximum of %s%%', $maxRate));
-                }
-            }
-        });
     }
 
     public function getAgentId(): int
@@ -86,28 +62,39 @@ final class CreateAgentSettingsRequest extends FormRequest
         return $this->input('agent_id');
     }
 
-    public function getPayoutProfile(): ?array
+    public function getDailyLimit(): ?int
     {
-        return $this->input('payout_profile');
+        return $this->input('daily_limit');
     }
 
-    public function getCommissionRate(): ?float
+    public function getMaxCommission(): float
     {
-        $rate = $this->input('commission_rate');
-
-        return $rate !== null ? (float) $rate : null;
+        return (float) $this->input('max_commission');
     }
 
-    public function getSharingRate(): ?float
+    public function getMaxShare(): float
     {
-        $rate = $this->input('sharing_rate');
-
-        return $rate !== null ? (float) $rate : null;
+        return (float) $this->input('max_share');
     }
 
-    public function getBettingLimits(): array
+    public function getNumberLimits(): array
     {
-        return $this->input('betting_limits', []);
+        $numberLimits = $this->input('number_limits', []);
+        $result = [];
+
+        foreach ($numberLimits as $limit) {
+            $gameType = $limit['game_type'];
+            $number = $limit['number'];
+            $amount = $limit['limit'];
+
+            if (! isset($result[$gameType])) {
+                $result[$gameType] = [];
+            }
+
+            $result[$gameType][$number] = $amount;
+        }
+
+        return $result;
     }
 
     public function getBlockedNumbers(): array
@@ -115,27 +102,13 @@ final class CreateAgentSettingsRequest extends FormRequest
         return $this->input('blocked_numbers', []);
     }
 
-    public function getAutoSettlement(): bool
-    {
-        return $this->boolean('auto_settlement', false);
-    }
-
-    public function getIsActive(): bool
-    {
-        return $this->boolean('is_active', true);
-    }
-
     protected function prepareForValidation(): void
     {
         // Convert empty strings to null for nullable fields
         $this->merge([
-            'commission_rate' => $this->commission_rate === '' ? null : $this->commission_rate,
-            'sharing_rate' => $this->sharing_rate === '' ? null : $this->sharing_rate,
-            'payout_profile' => $this->payout_profile === '' ? null : $this->payout_profile,
-            'betting_limits' => $this->betting_limits === '' ? [] : $this->betting_limits,
-            'blocked_numbers' => $this->blocked_numbers === '' ? [] : $this->blocked_numbers,
-            'auto_settlement' => $this->auto_settlement === '' ? false : $this->auto_settlement,
-            'is_active' => $this->is_active === '' ? true : $this->is_active,
+            'daily_limit' => $this->daily_limit === '' ? null : $this->daily_limit,
+            'number_limits' => $this->number_limits === '' ? null : $this->number_limits,
+            'blocked_numbers' => $this->blocked_numbers === '' ? null : $this->blocked_numbers,
         ]);
     }
 }

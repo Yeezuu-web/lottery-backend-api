@@ -155,14 +155,11 @@ final class AgentType
     }
 
     /**
-     * Check if this agent type can place bets
+     * Check if this agent type can place bets member only
      */
     public function canPlaceBets(): bool
     {
-        return in_array($this->value, [
-            self::AGENT,
-            self::MEMBER,
-        ]);
+        return $this->value === self::MEMBER;
     }
 
     /**

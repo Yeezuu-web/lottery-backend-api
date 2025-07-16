@@ -6,13 +6,11 @@ namespace App\Infrastructure\AgentSettings\Repositories;
 
 use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
 use App\Domain\AgentSettings\Models\AgentSettings;
-use App\Domain\AgentSettings\ValueObjects\CommissionRate;
-use App\Domain\AgentSettings\ValueObjects\CommissionSharingSettings;
-use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
-use App\Domain\AgentSettings\ValueObjects\SharingRate;
+use App\Domain\AgentSettings\ValueObjects\DailyLimit;
+use App\Domain\AgentSettings\ValueObjects\NumberLimit;
 use App\Infrastructure\AgentSettings\Models\EloquentAgentSettings;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 final readonly class AgentSettingsRepository implements AgentSettingsRepositoryInterface
 {
@@ -36,7 +34,6 @@ final readonly class AgentSettingsRepository implements AgentSettingsRepositoryI
 
         // If not in cache, get from database
         $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
             ->where('agent_id', $agentId)
             ->first();
 
@@ -64,23 +61,13 @@ final readonly class AgentSettingsRepository implements AgentSettingsRepositoryI
 
         $eloquentSettings->fill([
             'agent_id' => $agentSettings->getAgentId(),
-            'payout_profile' => $agentSettings->getPayoutProfile()?->toArray(),
-            'payout_profile_source_agent_id' => $agentSettings->getAgentId(), // Default to same agent
-            'has_custom_payout_profile' => $agentSettings->hasCustomPayoutProfile(),
-            'commission_rate' => $agentSettings->getCommissionSharingSettings()->getCommissionRate()?->getRate(),
-            'sharing_rate' => $agentSettings->getCommissionSharingSettings()->getSharingRate()?->getRate(),
-            'max_commission_sharing_rate' => $agentSettings->getCommissionSharingSettings()->getMaxCombinedRate(),
-            'effective_payout_profile' => $agentSettings->getEffectivePayoutProfile()->toArray(),
-            'effective_payout_source_agent_id' => $agentSettings->getAgentId(), // Default to same agent
-            'effective_commission_rate' => $agentSettings->getEffectiveCommissionSharingSettings()->getCommissionRate()?->getRate(),
-            'effective_sharing_rate' => $agentSettings->getEffectiveCommissionSharingSettings()->getSharingRate()?->getRate(),
-            'is_computed' => $agentSettings->isComputed(),
-            'computed_at' => $agentSettings->getComputedAt(),
-            'cache_expires_at' => $agentSettings->getCacheExpiresAt(),
-            'betting_limits' => $agentSettings->getBettingLimits(),
+            'daily_limit' => $agentSettings->getDailyLimit()->isUnlimited()
+                ? null
+                : $agentSettings->getDailyLimit()->getLimit(),
+            'max_commission' => $agentSettings->getMaxCommission(),
+            'max_share' => $agentSettings->getMaxShare(),
+            'number_limits' => $agentSettings->getNumberLimitsArray(),
             'blocked_numbers' => $agentSettings->getBlockedNumbers(),
-            'auto_settlement' => $agentSettings->getAutoSettlement(),
-            'is_active' => $agentSettings->isActive(),
         ]);
 
         $eloquentSettings->save();
@@ -93,279 +80,109 @@ final readonly class AgentSettingsRepository implements AgentSettingsRepositoryI
 
     public function delete(int $agentId): bool
     {
-        $deleted = $this->model
-            ->where('agent_id', $agentId)
-            ->delete();
-
-        if ($deleted) {
-            $this->clearCache($agentId);
-        }
-
-        return $deleted > 0;
-    }
-
-    public function exists(int $agentId): bool
-    {
-        return $this->model
-            ->where('agent_id', $agentId)
-            ->exists();
-    }
-
-    public function findByAgentIds(array $agentIds): array
-    {
-        if ($agentIds === []) {
-            return [];
-        }
-
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->whereIn('agent_id', $agentIds)
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findWithExpiredCache(): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->withExpiredCache()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function refreshCache(int $agentId): ?AgentSettings
-    {
         $this->clearCache($agentId);
 
-        return $this->findByAgentId($agentId);
+        return $this->model->where('agent_id', $agentId)->delete() > 0;
     }
 
-    public function getAllActive(): array
+    public function getDailyUsage(int $agentId): int
     {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->active()
-            ->get();
+        $today = now()->format('Y-m-d');
 
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function getInheritanceChain(int $agentId): array
-    {
-        // Get the agent and traverse up the hierarchy
-        $eloquentSettings = $this->model
-            ->with(['agent.parent', 'payoutProfileSource', 'effectivePayoutSource'])
+        $usage = DB::table('daily_limit_usage')
             ->where('agent_id', $agentId)
+            ->where('date', $today)
             ->first();
 
-        if (! $eloquentSettings || ! $eloquentSettings->agent) {
-            return [];
-        }
-
-        $chain = [];
-        $currentAgent = $eloquentSettings->agent;
-
-        while ($currentAgent) {
-            $agentSettings = $this->findByAgentId($currentAgent->id);
-            if ($agentSettings instanceof AgentSettings) {
-                $chain[] = $agentSettings;
-            }
-
-            $currentAgent = $currentAgent->parent;
-        }
-
-        return $chain;
+        return $usage ? (int) $usage->total_amount : 0;
     }
 
-    public function findWithCustomPayoutProfile(): array
+    public function getNumberUsage(int $agentId): array
     {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->withCustomPayoutProfile()
-            ->active()
-            ->get();
+        $today = now()->format('Y-m-d');
 
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findWithInheritedPayoutProfile(): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->withInheritedPayoutProfile()
-            ->active()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findWithCommissionRateAbove(float $threshold): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->withCommissionRateAbove($threshold)
-            ->active()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findWithSharingRateAbove(float $threshold): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->withSharingRateAbove($threshold)
-            ->active()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findWithAutoSettlement(): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->withAutoSettlement()
-            ->active()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findComputed(): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->computed()
-            ->active()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function findNotComputed(): array
-    {
-        $eloquentSettings = $this->model
-            ->with(['agent', 'payoutProfileSource', 'effectivePayoutSource'])
-            ->notComputed()
-            ->active()
-            ->get();
-
-        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
-    }
-
-    public function updateCacheExpiration(int $agentId, Carbon $expiresAt): bool
-    {
-        $updated = $this->model
+        $usages = DB::table('number_limit_usage')
             ->where('agent_id', $agentId)
-            ->update([
-                'cache_expires_at' => $expiresAt,
-                'updated_at' => now(),
-            ]);
+            ->where('date', $today)
+            ->get();
 
-        if ($updated) {
-            $this->clearCache($agentId);
+        $result = [];
+        foreach ($usages as $usage) {
+            $result[$usage->game_type][$usage->number] = (int) $usage->total_amount;
         }
 
-        return $updated > 0;
+        return $result;
     }
 
-    public function markAsComputed(int $agentId, Carbon $computedAt): bool
+    public function incrementDailyUsage(int $agentId, int $amount): void
     {
-        $updated = $this->model
-            ->where('agent_id', $agentId)
-            ->update([
-                'is_computed' => true,
-                'computed_at' => $computedAt,
-                'updated_at' => now(),
-            ]);
+        $today = now()->format('Y-m-d');
 
-        if ($updated) {
-            $this->clearCache($agentId);
-        }
-
-        return $updated > 0;
+        DB::table('daily_limit_usage')
+            ->updateOrInsert(
+                ['agent_id' => $agentId, 'date' => $today],
+                [
+                    'total_amount' => DB::raw('COALESCE(total_amount, 0) + '.$amount),
+                    'last_updated_at' => now(),
+                ]
+            );
     }
 
-    public function bulkUpdateCacheExpiration(array $agentIds, Carbon $expiresAt): int
+    public function incrementNumberUsage(int $agentId, string $gameType, string $number, int $amount): void
     {
-        if ($agentIds === []) {
-            return 0;
-        }
+        $today = now()->format('Y-m-d');
 
-        $updated = $this->model
-            ->whereIn('agent_id', $agentIds)
-            ->update([
-                'cache_expires_at' => $expiresAt,
-                'updated_at' => now(),
-            ]);
+        DB::table('number_limit_usage')
+            ->updateOrInsert(
+                [
+                    'agent_id' => $agentId,
+                    'number' => $number,
+                    'game_type' => $gameType,
+                    'date' => $today,
+                ],
+                [
+                    'total_amount' => DB::raw('COALESCE(total_amount, 0) + '.$amount),
+                    'last_updated_at' => now(),
+                ]
+            );
+    }
 
-        // Clear caches for all updated agents
-        foreach ($agentIds as $agentId) {
-            $this->clearCache($agentId);
-        }
+    public function getActiveSettings(): array
+    {
+        $eloquentSettings = $this->model
+            ->where('is_active', true)
+            ->get();
 
-        return $updated;
+        return $eloquentSettings->map(fn ($settings): AgentSettings => $this->mapFromEloquent($settings))->toArray();
+    }
+
+    public function hasSettings(int $agentId): bool
+    {
+        return $this->model->where('agent_id', $agentId)->exists();
     }
 
     private function mapFromEloquent(EloquentAgentSettings $eloquentSettings): AgentSettings
     {
-        $payoutProfile = $eloquentSettings->payout_profile
-            ? PayoutProfile::fromArray($eloquentSettings->payout_profile)
-            : null;
+        // Create daily limit value object
+        $dailyLimit = DailyLimit::create($eloquentSettings->daily_limit);
 
-        $effectivePayoutProfile = $eloquentSettings->effective_payout_profile
-            ? PayoutProfile::fromArray($eloquentSettings->effective_payout_profile)
-            : PayoutProfile::default();
+        // Create number limits value objects
+        $numberLimits = [];
+        if ($eloquentSettings->number_limits) {
+            foreach ($eloquentSettings->number_limits as $gameType => $limits) {
+                foreach ($limits as $number => $limit) {
+                    $numberLimits[] = NumberLimit::create($gameType, $number, $limit);
+                }
+            }
+        }
 
-        $commissionRate = $eloquentSettings->commission_rate !== null
-            ? CommissionRate::fromPercentage((float) $eloquentSettings->commission_rate)
-            : null;
-
-        $sharingRate = $eloquentSettings->sharing_rate !== null
-            ? SharingRate::fromPercentage((float) $eloquentSettings->sharing_rate)
-            : null;
-
-        $effectiveCommissionRate = $eloquentSettings->effective_commission_rate !== null
-            ? CommissionRate::fromPercentage((float) $eloquentSettings->effective_commission_rate)
-            : null;
-
-        $effectiveSharingRate = $eloquentSettings->effective_sharing_rate !== null
-            ? SharingRate::fromPercentage((float) $eloquentSettings->effective_sharing_rate)
-            : null;
-
-        $commissionSharingSettings = new CommissionSharingSettings(
-            $commissionRate,
-            $sharingRate,
-            (float) ($eloquentSettings->max_commission_sharing_rate ?? 50.0)
-        );
-
-        $effectiveCommissionSharingSettings = new CommissionSharingSettings(
-            $effectiveCommissionRate,
-            $effectiveSharingRate,
-            (float) ($eloquentSettings->max_commission_sharing_rate ?? 50.0)
-        );
-
-        return new AgentSettings(
+        return AgentSettings::create(
             agentId: $eloquentSettings->agent_id,
-            payoutProfile: $payoutProfile,
-            payoutProfileSourceAgentId: $eloquentSettings->payout_profile_source_agent_id,
-            hasCustomPayoutProfile: $eloquentSettings->has_custom_payout_profile,
-            commissionSharingSettings: $commissionSharingSettings,
-            effectivePayoutProfile: $effectivePayoutProfile,
-            effectivePayoutSourceAgentId: $eloquentSettings->effective_payout_source_agent_id ?? $eloquentSettings->agent_id,
-            effectiveCommissionSharingSettings: $effectiveCommissionSharingSettings,
-            isComputed: $eloquentSettings->is_computed,
-            computedAt: $eloquentSettings->computed_at ? Carbon::parse($eloquentSettings->computed_at) : null,
-            cacheExpiresAt: $eloquentSettings->cache_expires_at ? Carbon::parse($eloquentSettings->cache_expires_at) : null,
-            bettingLimits: $eloquentSettings->betting_limits ?? [],
-            blockedNumbers: $eloquentSettings->blocked_numbers ?? [],
-            autoSettlement: $eloquentSettings->auto_settlement ?? false,
-            isActive: $eloquentSettings->is_active ?? true,
-            createdAt: $eloquentSettings->created_at ? Carbon::parse($eloquentSettings->created_at) : Carbon::now(),
-            updatedAt: $eloquentSettings->updated_at ? Carbon::parse($eloquentSettings->updated_at) : Carbon::now()
+            dailyLimit: $dailyLimit,
+            maxCommission: (float) $eloquentSettings->max_commission,
+            maxShare: (float) $eloquentSettings->max_share,
+            numberLimits: $numberLimits,
+            blockedNumbers: $eloquentSettings->blocked_numbers ?? []
         );
     }
 
@@ -383,82 +200,38 @@ final readonly class AgentSettingsRepository implements AgentSettingsRepositoryI
     {
         return [
             'agent_id' => $agentSettings->getAgentId(),
-            'payout_profile' => $agentSettings->getPayoutProfile()?->toArray(),
-            'payout_profile_source_agent_id' => $agentSettings->getPayoutProfileSourceAgentId(),
-            'has_custom_payout_profile' => $agentSettings->hasCustomPayoutProfile(),
-            'commission_rate' => $agentSettings->getCommissionRate()?->value(),
-            'sharing_rate' => $agentSettings->getSharingRate()?->value(),
-            'max_commission_sharing_rate' => $agentSettings->getMaxCommissionSharingRate(),
-            'effective_payout_profile' => $agentSettings->getEffectivePayoutProfile()->toArray(),
-            'effective_payout_source_agent_id' => $agentSettings->getEffectivePayoutSourceAgentId(),
-            'effective_commission_rate' => $agentSettings->getEffectiveCommissionRate()?->value(),
-            'effective_sharing_rate' => $agentSettings->getEffectiveSharingRate()?->value(),
-            'is_computed' => $agentSettings->isComputed(),
-            'computed_at' => $agentSettings->getComputedAt()?->toISOString(),
-            'cache_expires_at' => $agentSettings->getCacheExpiresAt()?->toISOString(),
-            'betting_limits' => $agentSettings->getBettingLimits(),
+            'daily_limit' => $agentSettings->getDailyLimit()->isUnlimited()
+                ? null
+                : $agentSettings->getDailyLimit()->getLimit(),
+            'max_commission' => $agentSettings->getMaxCommission(),
+            'max_share' => $agentSettings->getMaxShare(),
+            'number_limits' => $agentSettings->getNumberLimitsArray(),
             'blocked_numbers' => $agentSettings->getBlockedNumbers(),
-            'auto_settlement' => $agentSettings->hasAutoSettlement(),
-            'is_active' => $agentSettings->isActive(),
-            'created_at' => $agentSettings->getCreatedAt()->toISOString(),
-            'updated_at' => $agentSettings->getUpdatedAt()->toISOString(),
         ];
     }
 
-    private function deserializeFromCache(array $cached): AgentSettings
+    private function deserializeFromCache(array $data): AgentSettings
     {
-        $payoutProfile = $cached['payout_profile']
-            ? PayoutProfile::fromArray($cached['payout_profile'])
-            : null;
+        // Create daily limit value object
+        $dailyLimit = DailyLimit::create($data['daily_limit']);
 
-        $effectivePayoutProfile = $cached['effective_payout_profile']
-            ? PayoutProfile::fromArray($cached['effective_payout_profile'])
-            : null;
+        // Create number limits value objects
+        $numberLimits = [];
+        if ($data['number_limits']) {
+            foreach ($data['number_limits'] as $gameType => $limits) {
+                foreach ($limits as $number => $limit) {
+                    $numberLimits[] = NumberLimit::create($gameType, $number, $limit);
+                }
+            }
+        }
 
-        $commissionRate = $cached['commission_rate'] !== null
-            ? CommissionRate::fromFloat($cached['commission_rate'])
-            : null;
-
-        $sharingRate = $cached['sharing_rate'] !== null
-            ? SharingRate::fromFloat($cached['sharing_rate'])
-            : null;
-
-        $effectiveCommissionRate = $cached['effective_commission_rate'] !== null
-            ? CommissionRate::fromFloat($cached['effective_commission_rate'])
-            : null;
-
-        $effectiveSharingRate = $cached['effective_sharing_rate'] !== null
-            ? SharingRate::fromFloat($cached['effective_sharing_rate'])
-            : null;
-
-        $commissionSharingSettings = new CommissionSharingSettings(
-            $commissionRate,
-            $sharingRate,
-            (float) $cached['max_commission_sharing_rate']
-        );
-
-        return new AgentSettings(
-            agentId: $cached['agent_id'],
-            payoutProfile: $payoutProfile,
-            payoutProfileSourceAgentId: $cached['payout_profile_source_agent_id'],
-            hasCustomPayoutProfile: $cached['has_custom_payout_profile'],
-            commissionSharingSettings: $commissionSharingSettings,
-            effectivePayoutProfile: $effectivePayoutProfile,
-            effectivePayoutSourceAgentId: $cached['effective_payout_source_agent_id'],
-            effectiveCommissionSharingSettings: new CommissionSharingSettings(
-                $effectiveCommissionRate,
-                $effectiveSharingRate,
-                (float) $cached['max_commission_sharing_rate']
-            ),
-            isComputed: $cached['is_computed'],
-            computedAt: $cached['computed_at'] ? Carbon::parse($cached['computed_at']) : null,
-            cacheExpiresAt: $cached['cache_expires_at'] ? Carbon::parse($cached['cache_expires_at']) : null,
-            bettingLimits: $cached['betting_limits'] ?? [],
-            blockedNumbers: $cached['blocked_numbers'] ?? [],
-            autoSettlement: $cached['auto_settlement'],
-            isActive: $cached['is_active'],
-            createdAt: Carbon::parse($cached['created_at']),
-            updatedAt: Carbon::parse($cached['updated_at'])
+        return AgentSettings::create(
+            agentId: $data['agent_id'],
+            dailyLimit: $dailyLimit,
+            maxCommission: $data['max_commission'],
+            maxShare: $data['max_share'],
+            numberLimits: $numberLimits,
+            blockedNumbers: $data['blocked_numbers'] ?? []
         );
     }
 }

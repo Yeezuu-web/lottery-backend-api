@@ -8,26 +8,22 @@ final readonly class CreateAgentSettingsCommand
 {
     public function __construct(
         public int $agentId,
-        public ?array $payoutProfile = null,
-        public ?float $commissionRate = null,
-        public ?float $sharingRate = null,
-        public array $bettingLimits = [],
-        public array $blockedNumbers = [],
-        public bool $autoSettlement = false,
-        public bool $isActive = true
+        public ?int $dailyLimit = null,
+        public float $maxCommission = 0.0,
+        public float $maxShare = 0.0,
+        public array $numberLimits = [],
+        public array $blockedNumbers = []
     ) {}
 
     public function toArray(): array
     {
         return [
             'agent_id' => $this->agentId,
-            'payout_profile' => $this->payoutProfile,
-            'commission_rate' => $this->commissionRate,
-            'sharing_rate' => $this->sharingRate,
-            'betting_limits' => $this->bettingLimits,
+            'daily_limit' => $this->dailyLimit,
+            'max_commission' => $this->maxCommission,
+            'max_share' => $this->maxShare,
+            'number_limits' => $this->numberLimits,
             'blocked_numbers' => $this->blockedNumbers,
-            'auto_settlement' => $this->autoSettlement,
-            'is_active' => $this->isActive,
         ];
     }
 }

@@ -9,13 +9,13 @@ use App\Application\Auth\DTOs\AuthenticateUserResponse;
 use App\Domain\Agent\Contracts\AgentRepositoryInterface;
 use App\Domain\Agent\ValueObjects\Username;
 use App\Domain\Auth\Contracts\AuthenticationDomainServiceInterface;
+use App\Domain\Auth\Contracts\LoginAuditServiceInterface;
 use App\Domain\Auth\Contracts\TokenServiceInterface;
 use App\Domain\Auth\Events\LoginAttempted;
 use App\Domain\Auth\Events\LoginBlocked;
 use App\Domain\Auth\Events\LoginFailed;
 use App\Domain\Auth\Events\LoginSuccessful;
 use App\Domain\Auth\Exceptions\AuthenticationException;
-use App\Domain\Auth\Services\LoginAuditService;
 use App\Domain\Auth\ValueObjects\DeviceInfo;
 use App\Infrastructure\Auth\Contracts\AuthenticationServiceInterface;
 use Exception;
@@ -29,7 +29,7 @@ final readonly class AuthenticateUserUseCase
         private TokenServiceInterface $tokenService,
         private AuthenticationDomainServiceInterface $authDomainService,
         private AuthenticationServiceInterface $authInfrastructureService,
-        private LoginAuditService $loginAuditService,
+        private LoginAuditServiceInterface $loginAuditService,
         private EventDispatcher $eventDispatcher
     ) {}
 

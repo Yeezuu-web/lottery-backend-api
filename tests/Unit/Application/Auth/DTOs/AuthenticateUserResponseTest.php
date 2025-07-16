@@ -54,6 +54,7 @@ test('to array returns correct structure', function (): void {
         'test@example.com',
         'Test User',
         'company',
+        'active',
         true
     );
     $tokenPair = AuthTestHelper::createTestTokenPair();

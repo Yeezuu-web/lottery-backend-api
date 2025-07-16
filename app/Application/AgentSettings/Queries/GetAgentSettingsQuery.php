@@ -8,16 +8,14 @@ final readonly class GetAgentSettingsQuery
 {
     public function __construct(
         public int $agentId,
-        public bool $includeEffectiveSettings = true,
-        public bool $refreshCache = false
+        public bool $includeUsage = true
     ) {}
 
     public function toArray(): array
     {
         return [
             'agent_id' => $this->agentId,
-            'include_effective_settings' => $this->includeEffectiveSettings,
-            'refresh_cache' => $this->refreshCache,
+            'include_usage' => $this->includeUsage,
         ];
     }
 }

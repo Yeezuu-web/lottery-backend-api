@@ -20,37 +20,39 @@ final readonly class GetAgentSettingsUseCase
     public function execute(GetAgentSettingsQuery $query): AgentSettingsOperationResponse
     {
         try {
-            // Check if we need to refresh cache
-            if ($query->refreshCache) {
-                $agentSettings = $this->repository->refreshCache($query->agentId);
-            } else {
-                $agentSettings = $this->repository->findByAgentId($query->agentId);
-            }
+            // Get agent settings
+            $agentSettings = $this->repository->findByAgentId($query->agentId);
 
             // Check if agent settings exist
             if (! $agentSettings instanceof \App\Domain\AgentSettings\Models\AgentSettings) {
                 throw AgentSettingsException::notFound($query->agentId);
             }
 
-            // Check if cache is expired and needs refresh
-            if ($agentSettings->isCacheExpired()) {
-                $agentSettings = $this->repository->refreshCache($query->agentId);
+            // Get usage data if requested
+            $dailyUsage = null;
+            $numberUsage = [];
+
+            if ($query->includeUsage ?? true) {
+                $dailyUsage = $this->repository->getDailyUsage($query->agentId);
+                $numberUsage = $this->repository->getNumberUsage($query->agentId);
             }
 
-            // Return success response
+            // Create response with usage data
+            $response = AgentSettingsResponse::fromDomainWithUsage(
+                $agentSettings,
+                $dailyUsage,
+                $numberUsage
+            );
+
             return AgentSettingsOperationResponse::success(
                 message: 'Agent settings retrieved successfully',
-                data: AgentSettingsResponse::fromDomain($agentSettings)
+                data: $response
             );
         } catch (AgentSettingsException $e) {
-            return AgentSettingsOperationResponse::failure(
-                message: $e->getMessage(),
-                errors: ['agent_settings' => $e->getMessage()]
-            );
+            return AgentSettingsOperationResponse::error($e->getMessage());
         } catch (Exception $e) {
-            return AgentSettingsOperationResponse::failure(
-                message: 'Failed to retrieve agent settings',
-                errors: ['system' => $e->getMessage()]
+            return AgentSettingsOperationResponse::error(
+                'Failed to retrieve agent settings: '.$e->getMessage()
             );
         }
     }

@@ -42,8 +42,8 @@ final readonly class CartRepository implements CartRepositoryInterface
             'total_amount' => $totalAmount->amount(),
             'currency' => $totalAmount->currency(),
             'status' => $cartItem->status,
-            'created_at' => new DateTimeImmutable($cartItem->created_at),
-            'updated_at' => new DateTimeImmutable($cartItem->updated_at),
+            'created_at' => DateTimeImmutable::createFromMutable($cartItem->created_at),
+            'updated_at' => DateTimeImmutable::createFromMutable($cartItem->updated_at),
         ];
     }
 
@@ -64,8 +64,8 @@ final readonly class CartRepository implements CartRepositoryInterface
             'total_amount' => $item->total_amount,
             'currency' => $item->currency,
             'status' => $item->status,
-            'created_at' => new DateTimeImmutable($item->created_at),
-            'updated_at' => new DateTimeImmutable($item->updated_at),
+            'created_at' => DateTimeImmutable::createFromMutable($item->created_at),
+            'updated_at' => DateTimeImmutable::createFromMutable($item->updated_at),
         ])->toArray();
     }
 
@@ -90,11 +90,32 @@ final readonly class CartRepository implements CartRepositoryInterface
 
     public function hasExistingItem(Agent $agent, BetData $betData): bool
     {
-        return $this->model
+        $betDataArray = $betData->toArray();
+
+        // Get all active cart items for this agent
+        $cartItems = $this->model
             ->where('agent_id', $agent->id())
             ->where('status', 'active')
-            ->where('bet_data', $betData->toArray())
-            ->exists();
+            ->get();
+
+        // Check each cart item for a match
+        foreach ($cartItems as $cartItem) {
+            $existingBetData = $cartItem->bet_data;
+
+            // Compare all the key fields that determine uniqueness
+            if (
+                $existingBetData['period'] === $betDataArray['period'] &&
+                $existingBetData['type'] === $betDataArray['type'] &&
+                $existingBetData['option'] === $betDataArray['option'] &&
+                $existingBetData['number'] === $betDataArray['number'] &&
+                $existingBetData['amount'] === $betDataArray['amount'] &&
+                $existingBetData['channels'] === $betDataArray['channels']
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getCartSummary(Agent $agent): array
@@ -134,7 +155,7 @@ final readonly class CartRepository implements CartRepositoryInterface
         $cartItem->channel_weights = $channelWeights;
         $cartItem->total_amount = $totalAmount->amount();
         $cartItem->currency = $totalAmount->currency();
-        $cartItem->updated_at = new DateTimeImmutable;
+        $cartItem->updated_at = now();
 
         $cartItem->save();
 
@@ -147,8 +168,8 @@ final readonly class CartRepository implements CartRepositoryInterface
             'total_amount' => $totalAmount->amount(),
             'currency' => $totalAmount->currency(),
             'status' => $cartItem->status,
-            'created_at' => new DateTimeImmutable($cartItem->created_at),
-            'updated_at' => $cartItem->updated_at,
+            'created_at' => DateTimeImmutable::createFromMutable($cartItem->created_at),
+            'updated_at' => DateTimeImmutable::createFromMutable($cartItem->updated_at),
         ];
     }
 
@@ -175,7 +196,7 @@ final readonly class CartRepository implements CartRepositoryInterface
             ->where('status', 'active')
             ->update([
                 'status' => 'submitted',
-                'updated_at' => new DateTimeImmutable,
+                'updated_at' => now(),
             ]);
     }
 

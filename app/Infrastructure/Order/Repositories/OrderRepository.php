@@ -187,7 +187,7 @@ final readonly class OrderRepository implements OrderRepositoryInterface
             ->whereIn('id', $orderIds)
             ->update([
                 'status' => $status,
-                'updated_at' => new DateTimeImmutable,
+                'updated_at' => now(),
             ]);
 
         return $updated > 0;
@@ -226,8 +226,8 @@ final readonly class OrderRepository implements OrderRepositoryInterface
             ->where('is_printed', false)
             ->update([
                 'is_printed' => true,
-                'printed_at' => new DateTimeImmutable,
-                'updated_at' => new DateTimeImmutable,
+                'printed_at' => now(),
+                'updated_at' => now(),
             ]);
     }
 
@@ -253,10 +253,10 @@ final readonly class OrderRepository implements OrderRepositoryInterface
             totalAmount: Money::fromAmount($eloquentOrder->total_amount, $eloquentOrder->currency),
             status: $eloquentOrder->status,
             isPrinted: $eloquentOrder->is_printed,
-            printedAt: $eloquentOrder->printed_at ? new DateTimeImmutable($eloquentOrder->printed_at) : null,
-            placedAt: new DateTimeImmutable($eloquentOrder->placed_at),
-            createdAt: new DateTimeImmutable($eloquentOrder->created_at),
-            updatedAt: new DateTimeImmutable($eloquentOrder->updated_at)
+            printedAt: $eloquentOrder->printed_at ? DateTimeImmutable::createFromMutable($eloquentOrder->printed_at) : null,
+            placedAt: DateTimeImmutable::createFromMutable($eloquentOrder->placed_at),
+            createdAt: DateTimeImmutable::createFromMutable($eloquentOrder->created_at),
+            updatedAt: DateTimeImmutable::createFromMutable($eloquentOrder->updated_at)
         );
     }
 }

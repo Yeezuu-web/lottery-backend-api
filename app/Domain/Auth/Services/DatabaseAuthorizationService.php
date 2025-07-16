@@ -25,7 +25,7 @@ final class DatabaseAuthorizationService
     {
         $cacheKey = sprintf('agent_permission_%d_%s', $agentId, $permission);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, fn(): bool => $this->checkPermissionFromDatabase($agentId, $permission));
+        return Cache::remember($cacheKey, self::CACHE_TTL, fn (): bool => $this->checkPermissionFromDatabase($agentId, $permission));
     }
 
     /**
@@ -61,9 +61,9 @@ final class DatabaseAuthorizationService
      */
     public function getAgentPermissions(int $agentId): array
     {
-        $cacheKey = 'agent_permissions_' . $agentId;
+        $cacheKey = 'agent_permissions_'.$agentId;
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, fn(): array => $this->getPermissionsFromDatabase($agentId));
+        return Cache::remember($cacheKey, self::CACHE_TTL, fn (): array => $this->getPermissionsFromDatabase($agentId));
     }
 
     /**
@@ -313,7 +313,7 @@ final class DatabaseAuthorizationService
             ->where('agent_id', $agentId)
             ->active()
             ->get()
-            ->map(fn($agentPermission) => $agentPermission->permission->name)
+            ->map(fn ($agentPermission) => $agentPermission->permission->name)
             ->toArray();
     }
 
@@ -328,7 +328,7 @@ final class DatabaseAuthorizationService
         }
 
         // Check specific grant permissions
-        if ($this->hasPermission($agentId, 'grant_' . $permissionName)) {
+        if ($this->hasPermission($agentId, 'grant_'.$permissionName)) {
             return true;
         }
 
@@ -346,7 +346,7 @@ final class DatabaseAuthorizationService
         }
 
         // Check specific revoke permissions
-        if ($this->hasPermission($agentId, 'revoke_' . $permissionName)) {
+        if ($this->hasPermission($agentId, 'revoke_'.$permissionName)) {
             return true;
         }
 
@@ -445,7 +445,7 @@ final class DatabaseAuthorizationService
      */
     private function clearAgentPermissionCache(int $agentId): void
     {
-        Cache::forget('agent_permissions_' . $agentId);
+        Cache::forget('agent_permissions_'.$agentId);
 
         // Clear individual permission caches
         $permissions = Permission::pluck('name');

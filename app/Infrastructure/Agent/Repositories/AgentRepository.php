@@ -409,7 +409,7 @@ final readonly class AgentRepository implements AgentRepositoryInterface
             return [];
         }
 
-        return $eloquentAgent->wallets->map(fn($wallet): array => [
+        return $eloquentAgent->wallets->map(fn ($wallet): array => [
             'id' => $wallet->id,
             'wallet_type' => $wallet->wallet_type,
             'balance' => $wallet->balance ?? 0,
@@ -431,7 +431,7 @@ final readonly class AgentRepository implements AgentRepositoryInterface
             return [];
         }
 
-        return $eloquentAgent->wallets->map(fn($wallet): array => [
+        return $eloquentAgent->wallets->map(fn ($wallet): array => [
             'id' => $wallet->id,
             'wallet_type' => $wallet->wallet_type,
             'balance' => $wallet->balance ?? 0,

@@ -1,14 +1,17 @@
 <?php
 
 declare(strict_types=1);
+
 use App\Application\AgentSettings\Commands\CreateAgentSettingsCommand;
 use App\Application\AgentSettings\Contracts\AgentSettingsRepositoryInterface;
 use App\Application\AgentSettings\UseCases\CreateAgentSettingsUseCase;
+use App\Domain\Agent\ValueObjects\AgentType;
 use App\Domain\AgentSettings\ValueObjects\CommissionRate;
 use App\Domain\AgentSettings\ValueObjects\CommissionSharingSettings;
 use App\Domain\AgentSettings\ValueObjects\PayoutProfile;
 use App\Domain\AgentSettings\ValueObjects\SharingRate;
-use Illuminate\Support\Facades\DB;
+use App\Infrastructure\Agent\Models\EloquentAgent;
+use Illuminate\Support\Facades\Hash;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -84,21 +87,24 @@ test('commission sharing settings exceeds limit', function (): void {
 });
 test('create agent settings use case', function (): void {
     // Use existing database structure from migrations
-    DB::table('agents')->insert([
-        'id' => 1,
-        'username' => 'TESTUSER1',
-        'email' => 'test@example.com',
-        'name' => 'Test Agent',
-        'agent_type' => 'agent',
-        'created_at' => now(),
-        'updated_at' => now(),
+    $agent = EloquentAgent::factory()->create([
+        'username' => 'A',
+        'password' => Hash::make('password'), // important!
+        'agent_type' => AgentType::COMPANY,
+        'status' => 'active',
+        'is_active' => true,
+        'email' => 'A@example.com',
+        'name' => 'A',
     ]);
 
     $useCase = new CreateAgentSettingsUseCase($this->repository);
     $command = new CreateAgentSettingsCommand(
-        agentId: 1,
-        commissionRate: 5.0,
-        sharingRate: 2.0
+        $agent->id,
+        null,
+        0.0,
+        0.0,
+        [],
+        []
     );
 
     $result = $useCase->execute($command);

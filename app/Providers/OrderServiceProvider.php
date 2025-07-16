@@ -11,6 +11,7 @@ use App\Application\Order\Contracts\OrderRepositoryInterface;
 use App\Application\Order\Contracts\WalletServiceInterface;
 use App\Application\Order\UseCases\AddToCartUseCase;
 use App\Application\Order\UseCases\SubmitCartUseCase;
+use App\Domain\AgentSettings\Contracts\BettingLimitValidationServiceInterface;
 use App\Infrastructure\Order\Repositories\CartRepository;
 use App\Infrastructure\Order\Repositories\OrderRepository;
 use App\Infrastructure\Order\Services\ChannelWeightService;
@@ -61,14 +62,16 @@ final class OrderServiceProvider extends ServiceProvider
             $app->make(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class),
             $app->make(NumberExpansionServiceInterface::class),
             $app->make(ChannelWeightServiceInterface::class),
-            $app->make(WalletServiceInterface::class)
+            $app->make(WalletServiceInterface::class),
+            $app->make(BettingLimitValidationServiceInterface::class)
         ));
 
         $this->app->singleton(SubmitCartUseCase::class, fn ($app): SubmitCartUseCase => new SubmitCartUseCase(
             $app->make(CartRepositoryInterface::class),
             $app->make(OrderRepositoryInterface::class),
             $app->make(\App\Domain\Agent\Contracts\AgentRepositoryInterface::class),
-            $app->make(WalletServiceInterface::class)
+            $app->make(WalletServiceInterface::class),
+            $app->make(BettingLimitValidationServiceInterface::class)
         ));
     }
 

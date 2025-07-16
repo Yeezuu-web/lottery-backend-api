@@ -59,7 +59,7 @@ final class AgentPermission extends Model
             return false;
         }
 
-        return !($this->expires_at && $this->expires_at < now());
+        return ! ($this->expires_at && $this->expires_at < now());
     }
 
     /**

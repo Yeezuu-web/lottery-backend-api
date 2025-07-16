@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Application\Auth\Listeners\LoginAuditListener;
 use App\Domain\Auth\Contracts\LoginAuditRepositoryInterface;
+use App\Domain\Auth\Contracts\LoginAuditServiceInterface;
 use App\Domain\Auth\Events\LoginAttempted;
 use App\Domain\Auth\Events\LoginBlocked;
 use App\Domain\Auth\Events\LoginFailed;
@@ -33,6 +34,9 @@ final class LoginAuditServiceProvider extends ServiceProvider
         $this->app->singleton(LoginAuditService::class, fn ($app): LoginAuditService => new LoginAuditService(
             $app->make(LoginAuditRepositoryInterface::class)
         ));
+
+        // Bind the interface to the implementation
+        $this->app->bind(LoginAuditServiceInterface::class, LoginAuditService::class);
     }
 
     /**
