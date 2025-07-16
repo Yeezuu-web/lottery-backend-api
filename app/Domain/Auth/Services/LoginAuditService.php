@@ -13,7 +13,7 @@ use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-final class LoginAuditService
+final readonly class LoginAuditService
 {
     public function __construct(
         private LoginAuditRepositoryInterface $loginAuditRepository
@@ -77,7 +77,7 @@ final class LoginAuditService
     ): ?LoginAudit {
         $attempts = $this->loginAuditRepository->findByUsername($username, 1);
 
-        if (empty($attempts)) {
+        if ($attempts === []) {
             return null;
         }
 
@@ -103,7 +103,7 @@ final class LoginAuditService
         JWTToken $jwtToken,
         ?string $sessionId = null
     ): LoginAudit {
-        $sessionId = $sessionId ?? $this->generateSessionId($agent, $jwtToken);
+        $sessionId ??= $this->generateSessionId($agent, $jwtToken);
 
         $successfulAudit = $loginAudit->markAsSuccessful(
             $agent->id(),

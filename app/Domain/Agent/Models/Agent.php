@@ -24,6 +24,7 @@ final readonly class Agent
         ?int $uplineId,
         private string $name,
         private string $email,
+        private ?string $status = null,
         private bool $isActive = true,
         private ?DateTimeImmutable $createdAt = null,
         private ?DateTimeImmutable $updatedAt = null,
@@ -45,6 +46,7 @@ final readonly class Agent
         ?int $uplineId,
         string $name,
         string $email,
+        ?string $status = null,
         bool $isActive = true,
         ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
@@ -57,6 +59,7 @@ final readonly class Agent
             $uplineId,
             $name,
             $email,
+            $status,
             $isActive,
             $createdAt,
             $updatedAt,
@@ -72,6 +75,7 @@ final readonly class Agent
         ?string $name,
         ?string $email,
         ?string $password,
+        ?string $status = null,
         ?bool $isActive = true,
         ?string $createdAt = null,
         ?string $updatedAt = null,
@@ -86,6 +90,7 @@ final readonly class Agent
             $uplineId,
             $name,
             $email,
+            $status,
             $isActive,
             $createdAt,
             $updatedAt,
@@ -121,6 +126,11 @@ final readonly class Agent
     public function email(): string
     {
         return $this->email;
+    }
+
+    public function status(): ?string
+    {
+        return $this->status;
     }
 
     public function isActive(): bool

@@ -32,11 +32,11 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->audience(),
                 $event->deviceInfo()
             );
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to record login attempt', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
         }
     }
@@ -54,7 +54,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->deviceInfo()
             );
 
-            if ($loginAudit) {
+            if ($loginAudit instanceof \App\Domain\Auth\Models\LoginAudit) {
                 $this->loginAuditService->markAsSuccessful(
                     $loginAudit,
                     $event->agent(),
@@ -62,11 +62,11 @@ final readonly class LoginAuditListener implements ShouldQueue
                     $event->sessionId()
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to record successful login', [
                 'username' => $event->agent()->username()->value(),
                 'audience' => $event->audience(),
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
         }
     }
@@ -84,7 +84,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->deviceInfo()
             );
 
-            if ($loginAudit) {
+            if ($loginAudit instanceof \App\Domain\Auth\Models\LoginAudit) {
                 $this->loginAuditService->markAsFailed(
                     $loginAudit,
                     $event->failureReason(),
@@ -93,11 +93,11 @@ final readonly class LoginAuditListener implements ShouldQueue
                     $event->deviceInfo()
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to record failed login', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
         }
     }
@@ -115,7 +115,7 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->deviceInfo()
             );
 
-            if ($loginAudit) {
+            if ($loginAudit instanceof \App\Domain\Auth\Models\LoginAudit) {
                 $this->loginAuditService->markAsBlocked(
                     $loginAudit,
                     $event->blockReason(),
@@ -124,11 +124,11 @@ final readonly class LoginAuditListener implements ShouldQueue
                     $event->deviceInfo()
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to record blocked login', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
         }
     }
@@ -145,11 +145,11 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->logoutReason(),
                 $event->deviceInfo()
             );
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to record session end', [
                 'username' => $event->agent()->username()->value(),
                 'session_id' => $event->sessionId(),
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
         }
     }
@@ -168,12 +168,12 @@ final readonly class LoginAuditListener implements ShouldQueue
                 $event->deviceInfo(),
                 $event->metadata()
             );
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error('Failed to record suspicious activity', [
                 'username' => $event->username(),
                 'audience' => $event->audience(),
                 'threat_level' => $event->threatLevel(),
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ]);
         }
     }

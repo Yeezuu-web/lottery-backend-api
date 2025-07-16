@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 // Application
+use App\Http\Middleware\DatabaseAuthorizationMiddleware;
 use App\Http\Middleware\MemberAuthMiddleware;
 use App\Http\Middleware\UplineAuthMiddleware;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'upline.auth' => UplineAuthMiddleware::class,
             'member.auth' => MemberAuthMiddleware::class,
+            'authorize' => DatabaseAuthorizationMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

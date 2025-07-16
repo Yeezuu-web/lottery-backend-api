@@ -159,11 +159,7 @@ final readonly class InterAgentTransferService
         }
 
         // 3. Company level can transfer between any agents
-        if ($initiator->isCompany()) {
-            return true;
-        }
-
-        return false;
+        return $initiator->isCompany();
     }
 
     /**
@@ -182,11 +178,7 @@ final readonly class InterAgentTransferService
         }
 
         // 3. Same level agents can transfer to each other if they have the same upline
-        if ($fromAgent->uplineId() === $toAgent->uplineId() && $fromAgent->uplineId() !== null) {
-            return true;
-        }
-
-        return false;
+        return $fromAgent->uplineId() === $toAgent->uplineId() && $fromAgent->uplineId() !== null;
     }
 
     /**
@@ -208,7 +200,7 @@ final readonly class InterAgentTransferService
         $this->validateTransferTypeRules($fromAgent, $toAgent, $fromWallet, $toWallet, $command);
 
         // Rule 4: Amount limits based on agent type and relationship
-        $this->validateAmountLimits($fromAgent, $toAgent, $command);
+        $this->validateAmountLimits($fromAgent, $command);
     }
 
     /**
@@ -222,6 +214,7 @@ final readonly class InterAgentTransferService
                 if ($fromWallet->getWalletType() !== WalletType::COMMISSION) {
                     throw new ValidationException('Commission transfers must originate from commission wallet');
                 }
+
                 break;
 
             case 'bonus':
@@ -229,6 +222,7 @@ final readonly class InterAgentTransferService
                 if (! in_array($toWallet->getWalletType(), [WalletType::MAIN, WalletType::BONUS])) {
                     throw new ValidationException('Bonus transfers must go to main or bonus wallet');
                 }
+
                 break;
 
             case 'manual':
@@ -236,6 +230,7 @@ final readonly class InterAgentTransferService
                 if (! $this->canTransferTo($fromAgent, $toAgent)) {
                     throw new ValidationException('Manual transfer not allowed between these agents');
                 }
+
                 break;
         }
     }
@@ -243,7 +238,7 @@ final readonly class InterAgentTransferService
     /**
      * Validate amount limits based on agent hierarchy
      */
-    private function validateAmountLimits(Agent $fromAgent, Agent $toAgent, TransferFundsCommand $command): void
+    private function validateAmountLimits(Agent $fromAgent, TransferFundsCommand $command): void
     {
         $amount = $command->amount->amount();
 
@@ -305,6 +300,7 @@ final readonly class InterAgentTransferService
                 if (! $initiator->canManage($fromAgent) || ! $initiator->canManage($toAgent)) {
                     throw new ValidationException('Insufficient permissions for commission transfer');
                 }
+
                 break;
 
             case 'bonus':
@@ -312,6 +308,7 @@ final readonly class InterAgentTransferService
                 if (! $initiator->canManage($toAgent)) {
                     throw new ValidationException('Insufficient permissions for bonus transfer');
                 }
+
                 break;
 
             case 'manual':
@@ -319,6 +316,7 @@ final readonly class InterAgentTransferService
                 if ($initiator->id() !== $fromAgent->id() && ! $initiator->canManage($fromAgent)) {
                     throw new ValidationException('Insufficient permissions for manual transfer');
                 }
+
                 break;
         }
     }

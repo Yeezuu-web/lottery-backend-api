@@ -72,6 +72,7 @@ final class AgentType
             self::MASTER => 4,
             self::AGENT => 5,
             self::MEMBER => 6,
+            default => 0
         };
     }
 

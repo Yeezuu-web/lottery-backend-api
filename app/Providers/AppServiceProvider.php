@@ -37,6 +37,11 @@ final class AppServiceProvider extends ServiceProvider
             AgentRepository::class
         );
 
+        // Bind Database Authorization Service
+        $this->app->singleton(
+            \App\Domain\Auth\Services\DatabaseAuthorizationService::class
+        );
+
         // Register Telescope if in local environment
         if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);

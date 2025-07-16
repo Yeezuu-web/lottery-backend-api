@@ -20,13 +20,13 @@ Route::prefix('v1/auth')->group(function (): void {
     require __DIR__.'/auth.php';
 });
 
-// Agent Management routes (protected by authentication middleware)
-Route::prefix('v1/agents')->middleware(['upline.auth'])->group(function (): void {
+// Agent Management routes (protected by authentication + authorization middleware)
+Route::prefix('v1/agents')->middleware(['upline.auth', 'authorize:manage_sub_agents,manage_all_agents'])->group(function (): void {
     require __DIR__.'/agents.php';
 });
 
-// Agent Settings routes (protected by authentication middleware)
-Route::prefix('v1/agent-settings')->middleware(['upline.auth'])->group(function (): void {
+// Agent Settings routes (protected by authentication + authorization middleware)
+Route::prefix('v1/agent-settings')->middleware(['upline.auth', 'authorize:manage_financial_settings'])->group(function (): void {
     require __DIR__.'/api/agent-settings.php';
 });
 
@@ -90,8 +90,8 @@ Route::prefix('v1/wallet')->group(function (): void {
     });
 });
 
-// Wallet Management routes (protected by authentication middleware)
-Route::prefix('v1/wallet')->middleware(['upline.auth'])->group(function (): void {
+// Wallet Management routes (protected by authentication + authorization middleware)
+Route::prefix('v1/wallet')->middleware(['upline.auth', 'authorize:manage_sub_wallets,manage_all_wallets'])->group(function (): void {
     require __DIR__.'/api/wallet.php';
 });
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\MemberAuthController;
+use App\Http\Controllers\Auth\PermissionController;
 use App\Http\Controllers\Auth\UplineAuthController;
 use App\Http\Middleware\MemberAuthMiddleware;
 use App\Http\Middleware\UplineAuthMiddleware;
@@ -43,4 +44,29 @@ Route::prefix('')->group(function (): void {
         Route::post('logout', [MemberAuthController::class, 'logout']);
         Route::get('profile', [MemberAuthController::class, 'profile']);
     });
+});
+
+// Permission Management Routes (Upline only)
+Route::prefix('permissions')->middleware([UplineAuthMiddleware::class])->group(function (): void {
+    // Get agent permissions
+    Route::get('agents/{agentId}', [PermissionController::class, 'getAgentPermissions'])
+        ->where('agentId', '[0-9]+');
+
+    // Grant permission
+    Route::post('grant', [PermissionController::class, 'grantPermission']);
+
+    // Revoke permission
+    Route::post('revoke', [PermissionController::class, 'revokePermission']);
+
+    // Bulk grant permissions
+    Route::post('bulk-grant', [PermissionController::class, 'bulkGrantPermissions']);
+
+    // Check permission
+    Route::get('check/{permission}', [PermissionController::class, 'checkPermission']);
+
+    // Get available permissions for agent type
+    Route::get('available/{agentType}', [PermissionController::class, 'getAvailablePermissions']);
+
+    // Get all permissions (admin)
+    Route::get('all', [PermissionController::class, 'getAllPermissions']);
 });

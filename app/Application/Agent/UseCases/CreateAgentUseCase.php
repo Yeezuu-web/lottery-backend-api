@@ -72,11 +72,11 @@ final readonly class CreateAgentUseCase
         // Dispatch domain event for wallet creation
         event(AgentCreated::now($savedAgent));
 
-        // Get agent statistics
-        $statistics = $this->agentDomainService->getAgentStatistics($savedAgent);
+        // Get wallet data
+        $wallets = $this->agentRepository->getAgentWallets($savedAgent->id());
 
         // Return response
-        return AgentResponse::fromDomain($savedAgent, [], $statistics);
+        return AgentResponse::fromDomain($savedAgent, [], [], $wallets);
     }
 
     /**

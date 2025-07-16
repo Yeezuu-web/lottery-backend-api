@@ -79,6 +79,51 @@ final readonly class AgentRepository implements AgentRepositoryInterface
         return $eloquentAgents->map(fn ($agent): Agent => $this->mapToAgent($agent))->toArray();
     }
 
+    /**
+     * Get direct downlines with wallet data
+     */
+    public function getDirectDownlinesWithWallets(int $agentId): array
+    {
+        $eloquentAgents = $this->model
+            ->with(['parent', 'settings', 'wallets'])
+            ->where('upline_id', $agentId)
+            ->active()
+            ->orderBy('username')
+            ->get();
+
+        return $eloquentAgents->map(fn ($eloquentAgent): array => [
+            'agent' => $this->mapToAgent($eloquentAgent),
+            'wallets' => $this->extractWalletData($eloquentAgent),
+        ])->toArray();
+    }
+
+    /**
+     * Get hierarchy downlines with wallet data
+     */
+    public function getHierarchyDownlinesWithWallets(int $agentId): array
+    {
+        // Get the agent's username to find all downlines
+        $agent = $this->findById($agentId);
+        if (! $agent instanceof Agent) {
+            return [];
+        }
+
+        $usernamePrefix = $agent->username()->value();
+
+        $eloquentAgents = $this->model
+            ->with(['parent', 'settings', 'wallets'])
+            ->where('username', 'LIKE', $usernamePrefix.'%')
+            ->where('id', '!=', $agentId)
+            ->active()
+            ->orderBy('username')
+            ->get();
+
+        return $eloquentAgents->map(fn ($eloquentAgent): array => [
+            'agent' => $this->mapToAgent($eloquentAgent),
+            'wallets' => $this->extractWalletData($eloquentAgent),
+        ])->toArray();
+    }
+
     public function getByUplineId(int $uplineId): array
     {
         $eloquentAgents = $this->model
@@ -128,7 +173,7 @@ final readonly class AgentRepository implements AgentRepositoryInterface
 
             $nextSequence = 1;
             do {
-                $newUsername = $prefix.mb_str_pad($nextSequence, $usernameLength - mb_strlen($prefix), '0', STR_PAD_LEFT);
+                $newUsername = $prefix.mb_str_pad((string) $nextSequence, $usernameLength - mb_strlen($prefix), '0', STR_PAD_LEFT);
                 ++$nextSequence;
             } while (in_array($newUsername, $existingUsernames));
 
@@ -352,6 +397,54 @@ final readonly class AgentRepository implements AgentRepositoryInterface
     }
 
     /**
+     * Get wallet data from EloquentAgent relationships
+     */
+    public function getAgentWallets(int $agentId): array
+    {
+        $eloquentAgent = $this->model
+            ->with(['wallets'])
+            ->find($agentId);
+
+        if (! $eloquentAgent) {
+            return [];
+        }
+
+        return $eloquentAgent->wallets->map(fn($wallet): array => [
+            'id' => $wallet->id,
+            'wallet_type' => $wallet->wallet_type,
+            'balance' => $wallet->balance ?? 0,
+            'locked_balance' => $wallet->locked_balance ?? 0,
+            'currency' => $wallet->currency ?? 'USD',
+            'is_active' => $wallet->is_active ?? true,
+            'last_transaction_at' => $wallet->last_transaction_at,
+            'created_at' => $wallet->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $wallet->updated_at?->format('Y-m-d H:i:s'),
+        ])->toArray();
+    }
+
+    /**
+     * Get wallet data from already loaded EloquentAgent
+     */
+    public function extractWalletData(EloquentAgent $eloquentAgent): array
+    {
+        if (! $eloquentAgent->relationLoaded('wallets')) {
+            return [];
+        }
+
+        return $eloquentAgent->wallets->map(fn($wallet): array => [
+            'id' => $wallet->id,
+            'wallet_type' => $wallet->wallet_type,
+            'balance' => $wallet->balance ?? 0,
+            'locked_balance' => $wallet->locked_balance ?? 0,
+            'currency' => $wallet->currency ?? 'USD',
+            'is_active' => $wallet->is_active ?? true,
+            'last_transaction_at' => $wallet->last_transaction_at,
+            'created_at' => $wallet->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $wallet->updated_at?->format('Y-m-d H:i:s'),
+        ])->toArray();
+    }
+
+    /**
      * Map EloquentAgent to Agent domain model
      */
     private function mapToAgent(EloquentAgent $eloquentAgent): Agent
@@ -363,6 +456,7 @@ final readonly class AgentRepository implements AgentRepositoryInterface
             $eloquentAgent->upline_id,
             $eloquentAgent->name,
             $eloquentAgent->email,
+            $eloquentAgent->status,
             $eloquentAgent->status === 'active',
             $eloquentAgent->created_at ? $eloquentAgent->created_at->toImmutable() : null,
             $eloquentAgent->updated_at ? $eloquentAgent->updated_at->toImmutable() : null,

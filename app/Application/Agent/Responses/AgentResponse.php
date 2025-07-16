@@ -16,15 +16,17 @@ final readonly class AgentResponse
         private string $agentType,
         private string $agentTypeDisplay,
         private ?int $uplineId,
+        private ?string $status,
         private bool $isActive,
         private int $hierarchyLevel,
         private string $createdAt,
         private ?string $updatedAt,
         private array $permissions = [],
-        private array $statistics = []
+        private array $statistics = [],
+        private array $wallets = []
     ) {}
 
-    public static function fromDomain(Agent $agent, array $permissions = [], array $statistics = []): self
+    public static function fromDomain(Agent $agent, array $permissions = [], array $statistics = [], array $wallets = []): self
     {
         return new self(
             $agent->id(),
@@ -34,12 +36,14 @@ final readonly class AgentResponse
             $agent->agentType()->value(),
             $agent->agentType()->getDisplayName(),
             $agent->uplineId(),
+            $agent->status(),
             $agent->isActive(),
             $agent->getHierarchyLevel(),
             $agent->createdAt()->format('Y-m-d H:i:s'),
             $agent->updatedAt()?->format('Y-m-d H:i:s'),
             $permissions,
-            $statistics
+            $statistics,
+            $wallets
         );
     }
 
@@ -78,6 +82,11 @@ final readonly class AgentResponse
         return $this->uplineId;
     }
 
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
     public function isActive(): bool
     {
         return $this->isActive;
@@ -108,6 +117,11 @@ final readonly class AgentResponse
         return $this->statistics;
     }
 
+    public function getWallets(): array
+    {
+        return $this->wallets;
+    }
+
     public function toArray(): array
     {
         return [
@@ -118,12 +132,14 @@ final readonly class AgentResponse
             'agent_type' => $this->agentType,
             'agent_type_display' => $this->agentTypeDisplay,
             'upline_id' => $this->uplineId,
+            'status' => $this->status,
             'is_active' => $this->isActive,
             'hierarchy_level' => $this->hierarchyLevel,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
             'permissions' => $this->permissions,
             'statistics' => $this->statistics,
+            'wallets' => $this->wallets,
         ];
     }
 }
