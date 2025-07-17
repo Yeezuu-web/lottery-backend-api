@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Auth\Models\AgentPermission;
 use App\Domain\Auth\Models\Permission;
+use App\Infrastructure\Agent\Models\EloquentAgent;
 use Illuminate\Database\Seeder;
 
 final class PermissionsSeeder extends Seeder
@@ -207,6 +209,27 @@ final class PermissionsSeeder extends Seeder
                 ['name' => $permission['name']],
                 $permission
             );
+        }
+
+        $agent = EloquentAgent::find(1);
+
+        if ($agent) {
+            $allPermissions = Permission::whereNotIn('name', ['place_bets', 'cancel_own_bets', 'view_own_bets'])->get();
+            foreach ($allPermissions as $perm) {
+            AgentPermission::updateOrCreate(
+                [
+                'agent_id' => $agent->id,
+                'permission_id' => $perm->id,
+                ],
+                [
+                'granted_by' => null,
+                'granted_at' => now(),
+                'expires_at' => null,
+                'is_active' => true,
+                'metadata' => null,
+                ]
+            );
+            }
         }
     }
 }

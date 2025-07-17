@@ -57,6 +57,7 @@ final readonly class CreateAgentUseCase
             $uplineId,
             $command->getName(),
             $command->getEmail(),
+            'active',
             true, // Active by default
             null, // Created at
             null, // Updated at

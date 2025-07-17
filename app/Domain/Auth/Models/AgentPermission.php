@@ -19,12 +19,15 @@ final class AgentPermission extends Model
         'metadata',
     ];
 
-    protected $casts = [
-        'granted_at' => 'datetime',
-        'expires_at' => 'datetime',
-        'is_active' => 'boolean',
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'granted_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'is_active' => 'boolean',
+            'metadata' => 'array',
+        ];
+    }
 
     /**
      * Get the agent that has this permission
